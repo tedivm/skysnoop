@@ -86,6 +86,10 @@ pytest:
 pytest_loud:
 	$(PYTHON) -m pytest --log-cli-level=DEBUG -log_cli=true --cov=./${PACKAGE_SLUG} --cov-report=term-missing tests
 
+.PHONY: pytest_live
+pytest_live:
+	$(PYTHON) -m pytest tests/integration/test_live_api.py --run-live-api -v
+
 .PHONY: ruff_check
 ruff_check:
 	$(PYTHON) -m ruff check
