@@ -1,0 +1,35 @@
+{
+    "ac": [
+        {
+            "hex": "ae5a06",
+            "type": "adsb_icao",
+            "flight": "HAMR47  ",
+            "r": "16-08471",
+            "t": "H47",
+            "dbFlags": 1,
+            "alt_baro": 1025,
+            "alt_geom": 1175,
+            "calc_track": 70,
+            "category": "A7",
+            "lat": 21.476828,
+            "lon": -158.050537,
+            "nic": 8,
+            "rc": 186,
+            "seen_pos": 54.608,
+            "version": 2,
+            "sil_type": "perhour",
+            "alert": 0,
+            "spi": 0,
+            "mlat": [],
+            "tisb": [],
+            "messages": 23607,
+            "seen": 50.0,
+            "rssi": -15.5
+        }
+    ],
+    "msg": "No error",
+    "now": 1763427832020,
+    "total": 1,
+    "ctime": 1763427832020,
+    "ptime": 0
+}

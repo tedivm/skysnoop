@@ -49,7 +49,13 @@ def pytest_addoption(parser):
         "--run-live-api",
         action="store_true",
         default=False,
-        help="Run tests that require access to the live adsb.lol API",
+        help="Run tests that require access to the live adsb.lol re-api (feeder-only)",
+    )
+    parser.addoption(
+        "--run-live-openapi",
+        action="store_true",
+        default=False,
+        help="Run tests that require access to the live adsb.lol OpenAPI (globally accessible)",
     )
 
 
@@ -57,17 +63,24 @@ def pytest_configure(config):
     """Configure pytest with custom markers."""
     config.addinivalue_line(
         "markers",
-        "live_api: marks tests that require access to the live adsb.lol API",
+        "live_api: marks tests that require access to the live adsb.lol re-api (feeder-only)",
+    )
+    config.addinivalue_line(
+        "markers",
+        "live_openapi: marks tests that require access to the live adsb.lol OpenAPI (globally accessible)",
     )
 
 
 def pytest_collection_modifyitems(config, items):
-    """Skip live_api tests unless --run-live-api is specified."""
-    if config.getoption("--run-live-api"):
-        # Run live API tests
-        return
+    """Skip live_api and live_openapi tests unless respective flags are specified."""
+    run_live_api = config.getoption("--run-live-api")
+    run_live_openapi = config.getoption("--run-live-openapi")
 
-    skip_live = pytest.mark.skip(reason="need --run-live-api option to run")
+    skip_live_api = pytest.mark.skip(reason="need --run-live-api option to run")
+    skip_live_openapi = pytest.mark.skip(reason="need --run-live-openapi option to run")
+
     for item in items:
-        if "live_api" in item.keywords:
-            item.add_marker(skip_live)
+        if "live_api" in item.keywords and not run_live_api:
+            item.add_marker(skip_live_api)
+        if "live_openapi" in item.keywords and not run_live_openapi:
+            item.add_marker(skip_live_openapi)

@@ -1,16 +1,27 @@
 import asyncio
 from functools import wraps
-from typing import Optional
+from typing import Literal, Optional
 
 import typer
 
-from .cli_formatters import format_output
+from .cli_formatters import format_openapi_output, format_output
 from .client.api import ADSBLolClient
-from .exceptions import ADSBLolError, APIError, TimeoutError, ValidationError
+from .client.openapi import OpenAPIClient
+from .exceptions import (ADSBLolError, APIError, AuthenticationError,
+                         OpenAPIValidationError, RateLimitError, TimeoutError,
+                         ValidationError)
 from .query.filters import QueryFilters
 from .settings import settings
 
 app = typer.Typer()
+openapi_app = typer.Typer(help="Commands for adsb.lol OpenAPI (globally accessible)")
+v2_app = typer.Typer(help="OpenAPI v2 aircraft query endpoints")
+v0_app = typer.Typer(help="OpenAPI v0 utility endpoints")
+
+# Register OpenAPI subcommands
+app.add_typer(openapi_app, name="openapi")
+openapi_app.add_typer(v2_app, name="v2")
+openapi_app.add_typer(v0_app, name="v0")
 
 
 def syncify(f):
@@ -347,6 +358,236 @@ def _build_filters(
         return None
 
     return QueryFilters(**filter_params)
+
+
+# ============================================================================
+# OpenAPI Commands
+# ============================================================================
+
+
+def handle_openapi_errors(f):
+    """Decorator to handle OpenAPI-specific errors in CLI commands."""
+
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except AuthenticationError as e:
+            typer.echo(f"Error: Authentication failed - {e}", err=True)
+            typer.echo("Please provide a valid API key (future requirement).", err=True)
+            raise typer.Exit(code=1)
+        except RateLimitError as e:
+            typer.echo(f"Error: Rate limit exceeded - {e}", err=True)
+            if e.retry_after:
+                typer.echo(f"Retry after {e.retry_after} seconds.", err=True)
+            raise typer.Exit(code=1)
+        except OpenAPIValidationError as e:
+            typer.echo(f"Error: Validation failed - {e}", err=True)
+            if e.details:
+                typer.echo("Details:", err=True)
+                for detail in e.details:
+                    typer.echo(f"  - {detail}", err=True)
+            raise typer.Exit(code=1)
+        except TimeoutError as e:
+            typer.echo(f"Error: Request timed out - {e}", err=True)
+            raise typer.Exit(code=1)
+        except APIError as e:
+            typer.echo(f"Error: API request failed - {e}", err=True)
+            raise typer.Exit(code=1)
+        except ADSBLolError as e:
+            typer.echo(f"Error: {e}", err=True)
+            raise typer.Exit(code=1)
+        except Exception as e:
+            typer.echo(f"Unexpected error: {e}", err=True)
+            raise typer.Exit(code=1)
+
+    return wrapper
+
+
+# V2 Commands
+
+
+@v2_app.command(name="pia", help="Get aircraft with PIA (Privacy ICAO Address) flag.")
+@handle_openapi_errors
+@syncify
+async def openapi_v2_pia(
+    api_key: Optional[str] = typer.Option(None, "--api-key", envvar="ADSBLOL_API_KEY", help="API key (optional)"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Get aircraft with PIA flag."""
+    async with OpenAPIClient(api_key=api_key) as client:
+        response = await client.v2.get_pia()
+    output_format: Literal["table", "json"] = "json" if json_output else "table"
+    format_openapi_output(response, format_type=output_format)
+
+
+@v2_app.command(name="mil", help="Get all military aircraft.")
+@handle_openapi_errors
+@syncify
+async def openapi_v2_mil(
+    api_key: Optional[str] = typer.Option(None, "--api-key", envvar="ADSBLOL_API_KEY", help="API key (optional)"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Get military aircraft."""
+    async with OpenAPIClient(api_key=api_key) as client:
+        response = await client.v2.get_mil()
+    output_format: Literal["table", "json"] = "json" if json_output else "table"
+    format_openapi_output(response, format_type=output_format)
+
+
+@v2_app.command(name="ladd", help="Get LADD (Limiting Aircraft Data Displayed) aircraft.")
+@handle_openapi_errors
+@syncify
+async def openapi_v2_ladd(
+    api_key: Optional[str] = typer.Option(None, "--api-key", envvar="ADSBLOL_API_KEY", help="API key (optional)"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Get LADD aircraft."""
+    async with OpenAPIClient(api_key=api_key) as client:
+        response = await client.v2.get_ladd()
+    output_format: Literal["table", "json"] = "json" if json_output else "table"
+    format_openapi_output(response, format_type=output_format)
+
+
+@v2_app.command(name="squawk", help="Get aircraft by squawk code.")
+@handle_openapi_errors
+@syncify
+async def openapi_v2_squawk(
+    squawk: str = typer.Argument(..., help="Squawk code (e.g., 7700)"),
+    api_key: Optional[str] = typer.Option(None, "--api-key", envvar="ADSBLOL_API_KEY", help="API key (optional)"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Get aircraft by squawk code."""
+    async with OpenAPIClient(api_key=api_key) as client:
+        response = await client.v2.get_by_squawk(squawk=squawk)
+    output_format: Literal["table", "json"] = "json" if json_output else "table"
+    format_openapi_output(response, format_type=output_format)
+
+
+@v2_app.command(name="type", help="Get aircraft by type designator.")
+@handle_openapi_errors
+@syncify
+async def openapi_v2_type(
+    aircraft_type: str = typer.Argument(..., help="Aircraft type designator (e.g., B738, A320)"),
+    api_key: Optional[str] = typer.Option(None, "--api-key", envvar="ADSBLOL_API_KEY", help="API key (optional)"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Get aircraft by type designator."""
+    async with OpenAPIClient(api_key=api_key) as client:
+        response = await client.v2.get_by_type(aircraft_type=aircraft_type)
+    output_format: Literal["table", "json"] = "json" if json_output else "table"
+    format_openapi_output(response, format_type=output_format)
+
+
+@v2_app.command(name="registration", help="Get aircraft by registration.")
+@handle_openapi_errors
+@syncify
+async def openapi_v2_registration(
+    registration: str = typer.Argument(..., help="Aircraft registration (e.g., N12345)"),
+    api_key: Optional[str] = typer.Option(None, "--api-key", envvar="ADSBLOL_API_KEY", help="API key (optional)"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Get aircraft by registration."""
+    async with OpenAPIClient(api_key=api_key) as client:
+        response = await client.v2.get_by_registration(registration=registration)
+    output_format: Literal["table", "json"] = "json" if json_output else "table"
+    format_openapi_output(response, format_type=output_format)
+
+
+@v2_app.command(name="hex", help="Get aircraft by ICAO hex code.")
+@handle_openapi_errors
+@syncify
+async def openapi_v2_hex(
+    icao_hex: str = typer.Argument(..., help="ICAO hex code (e.g., a1b2c3)"),
+    api_key: Optional[str] = typer.Option(None, "--api-key", envvar="ADSBLOL_API_KEY", help="API key (optional)"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Get aircraft by ICAO hex code."""
+    async with OpenAPIClient(api_key=api_key) as client:
+        response = await client.v2.get_by_hex(icao_hex=icao_hex)
+    output_format: Literal["table", "json"] = "json" if json_output else "table"
+    format_openapi_output(response, format_type=output_format)
+
+
+@v2_app.command(name="callsign", help="Get aircraft by callsign.")
+@handle_openapi_errors
+@syncify
+async def openapi_v2_callsign(
+    callsign: str = typer.Argument(..., help="Aircraft callsign (e.g., UAL123)"),
+    api_key: Optional[str] = typer.Option(None, "--api-key", envvar="ADSBLOL_API_KEY", help="API key (optional)"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Get aircraft by callsign."""
+    async with OpenAPIClient(api_key=api_key) as client:
+        response = await client.v2.get_by_callsign(callsign=callsign)
+    output_format: Literal["table", "json"] = "json" if json_output else "table"
+    format_openapi_output(response, format_type=output_format)
+
+
+@v2_app.command(name="point", help="Get aircraft within radius of a point.")
+@handle_openapi_errors
+@syncify
+async def openapi_v2_point(
+    lat: float = typer.Argument(..., help="Latitude (-90 to 90)"),
+    lon: float = typer.Argument(..., help="Longitude (-180 to 180)"),
+    radius: int = typer.Argument(..., help="Radius in nautical miles"),
+    api_key: Optional[str] = typer.Option(None, "--api-key", envvar="ADSBLOL_API_KEY", help="API key (optional)"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Get aircraft within radius of a point."""
+    async with OpenAPIClient(api_key=api_key) as client:
+        response = await client.v2.get_by_point(lat=lat, lon=lon, radius=radius)
+    output_format: Literal["table", "json"] = "json" if json_output else "table"
+    format_openapi_output(response, format_type=output_format)
+
+
+@v2_app.command(name="closest", help="Get closest aircraft to a point within radius.")
+@handle_openapi_errors
+@syncify
+async def openapi_v2_closest(
+    lat: float = typer.Argument(..., help="Latitude (-90 to 90)"),
+    lon: float = typer.Argument(..., help="Longitude (-180 to 180)"),
+    radius: int = typer.Argument(..., help="Radius in nautical miles"),
+    api_key: Optional[str] = typer.Option(None, "--api-key", envvar="ADSBLOL_API_KEY", help="API key (optional)"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Get closest aircraft to a point."""
+    async with OpenAPIClient(api_key=api_key) as client:
+        response = await client.v2.get_closest(lat=lat, lon=lon, radius=radius)
+    output_format: Literal["table", "json"] = "json" if json_output else "table"
+    format_openapi_output(response, format_type=output_format)
+
+
+# V0 Commands
+
+
+@v0_app.command(name="airport", help="Get airport information by ICAO code.")
+@handle_openapi_errors
+@syncify
+async def openapi_v0_airport(
+    icao: str = typer.Argument(..., help="Airport ICAO code (e.g., KSFO)"),
+    api_key: Optional[str] = typer.Option(None, "--api-key", envvar="ADSBLOL_API_KEY", help="API key (optional)"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Get airport information."""
+    async with OpenAPIClient(api_key=api_key) as client:
+        response = await client.v0.get_airport(icao=icao)
+    output_format: Literal["table", "json"] = "json" if json_output else "table"
+    format_openapi_output(response, format_type=output_format)
+
+
+@v0_app.command(name="me", help="Get information about the authenticated user.")
+@handle_openapi_errors
+@syncify
+async def openapi_v0_me(
+    api_key: Optional[str] = typer.Option(None, "--api-key", envvar="ADSBLOL_API_KEY", help="API key (optional)"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Get user information."""
+    async with OpenAPIClient(api_key=api_key) as client:
+        response = await client.v0.get_me()
+    output_format: Literal["table", "json"] = "json" if json_output else "table"
+    format_openapi_output(response, format_type=output_format)
 
 
 if __name__ == "__main__":

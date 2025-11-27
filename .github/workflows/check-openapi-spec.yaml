@@ -1,0 +1,137 @@
+name: Check OpenAPI Spec
+
+on:
+  schedule:
+    # Run every Sunday at midnight UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  check-spec:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Download Latest OpenAPI Spec
+        run: |
+          curl -s https://api.adsb.lol/api/openapi.json > latest_spec.json
+          echo "Downloaded latest spec"
+
+      - name: Calculate Spec Hash
+        id: spec-hash
+        run: |
+          CURRENT_HASH=$(shasum -a 256 resources/openapi_spec.json | cut -d' ' -f1)
+          LATEST_HASH=$(shasum -a 256 latest_spec.json | cut -d' ' -f1)
+          echo "current_hash=$CURRENT_HASH" >> $GITHUB_OUTPUT
+          echo "latest_hash=$LATEST_HASH" >> $GITHUB_OUTPUT
+          echo "Current spec hash: $CURRENT_HASH"
+          echo "Latest spec hash: $LATEST_HASH"
+
+      - name: Compare Specs
+        id: compare
+        run: |
+          if [ "${{ steps.spec-hash.outputs.current_hash }}" != "${{ steps.spec-hash.outputs.latest_hash }}" ]; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+            echo "⚠️ OpenAPI spec has changed!"
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+            echo "✓ OpenAPI spec is up to date"
+          fi
+
+      - name: Extract Version Info
+        if: steps.compare.outputs.changed == 'true'
+        id: version
+        run: |
+          CURRENT_VERSION=$(cat resources/openapi_spec.json | python3 -c "import sys, json; print(json.load(sys.stdin)['info']['version'])")
+          LATEST_VERSION=$(cat latest_spec.json | python3 -c "import sys, json; print(json.load(sys.stdin)['info']['version'])")
+          echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "latest_version=$LATEST_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Generate Diff
+        if: steps.compare.outputs.changed == 'true'
+        id: diff
+        run: |
+          # Create a human-readable diff
+          diff -u resources/openapi_spec.json latest_spec.json > spec_diff.txt || true
+          echo "Diff generated (may be large)"
+
+      - name: Create Issue
+        if: steps.compare.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+
+            // Read the diff (truncate if too large for issue)
+            let diff = '';
+            try {
+              diff = fs.readFileSync('spec_diff.txt', 'utf8');
+              if (diff.length > 10000) {
+                diff = diff.substring(0, 10000) + '\n\n... (diff truncated, see workflow logs for full diff)';
+              }
+            } catch (e) {
+              diff = '(Unable to read diff file)';
+            }
+
+            const issueBody = `## OpenAPI Spec Update Detected
+
+            The adsb.lol OpenAPI specification has changed.
+
+            **Current Version:** ${{ steps.version.outputs.current_version }}
+            **Latest Version:** ${{ steps.version.outputs.latest_version }}
+
+            **Current Hash:** \`${{ steps.spec-hash.outputs.current_hash }}\`
+            **Latest Hash:** \`${{ steps.spec-hash.outputs.latest_hash }}\`
+
+            ### Update Checklist
+
+            - [ ] Review the changes in the spec diff below
+            - [ ] Run \`make openapi-update\` to regenerate models
+            - [ ] Review generated model changes with \`git diff adsblol/models/openapi/\`
+            - [ ] Update client methods if endpoints changed
+            - [ ] Update tests for new/changed operations
+            - [ ] Run full test suite: \`make tests\`
+            - [ ] Update documentation if needed
+            - [ ] Test CLI commands manually
+            - [ ] Consider using the Copilot prompt: \`@.github/prompts/update-openapi-client.prompt.md\`
+
+            ### Spec Diff
+
+            <details>
+            <summary>Click to expand diff</summary>
+
+            \`\`\`diff
+            ${diff}
+            \`\`\`
+
+            </details>
+
+            ### Next Steps
+
+            1. Download the new spec: \`make openapi-download\`
+            2. Regenerate models: \`make openapi-generate\`
+            3. Review and test changes
+            4. Update version tracking in \`adsblol/client/openapi_version.py\`
+            5. Commit changes with descriptive message
+
+            ---
+            *This issue was automatically created by the [Check OpenAPI Spec workflow](https://github.com/${{ github.repository }}/actions/workflows/check-openapi-spec.yaml)*`;
+
+            // Create the issue
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `OpenAPI Spec Update: v${{ steps.version.outputs.latest_version }}`,
+              body: issueBody,
+              labels: ['openapi', 'maintenance', 'automated']
+            });
+
+      - name: Upload Spec Files
+        if: steps.compare.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: openapi-specs
+          path: |
+            resources/openapi_spec.json
+            latest_spec.json
+            spec_diff.txt

@@ -21,8 +21,10 @@ readme = {file = "README.md", content-type = "text/markdown"}
 dev = [
   "build",
   "dapperdata",
+  "datamodel-code-generator[http]", # Generate Pydantic models from OpenAPI spec
   "glom",
   "mypy",
+  "openapi-python-client", # Alternative option for full client generation
   "pytest",
   "pytest-asyncio",
   "pytest-cov",
@@ -50,7 +52,8 @@ plugins = ["pydantic.mypy"]
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "function"
 markers = [
-  "live_api: marks tests that require access to the live adsb.lol API (deselect with '-m \"not live_api\"')",
+  "live_api: marks tests that require access to the live adsb.lol re-api (feeder-only, deselect with '-m \"not live_api\"')",
+  "live_openapi: marks tests that require access to the live adsb.lol OpenAPI (globally accessible, deselect with '-m \"not live_openapi\"')",
 ]
 
 [tool.ruff]

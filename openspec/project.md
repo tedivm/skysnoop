@@ -2,16 +2,17 @@
 
 ## Purpose
 
-`adsblol` is a Python client library for interacting with the [adsb.lol](https://www.adsb.lol/) re-api (readsb HTTP API). The library provides a clean, typed, async-first interface for querying aircraft position and telemetry data from the adsb.lol network.
+`adsblol` is a Python client library for interacting with the [adsb.lol](https://www.adsb.lol/) API. The library provides two clients: a modern OpenAPI-based client for the public API, and a legacy RE-API client for feeder-specific endpoints. Both provide clean, typed, async-first interfaces for querying aircraft position and telemetry data from the adsb.lol network.
 
 ### Goals
 
-- Provide a production-ready Python client for the adsb.lol re-api
+- Provide production-ready Python clients for both adsb.lol APIs (OpenAPI and RE-API)
 - Support all query formats (circle, closest, box, all, find_hex, find_callsign, find_reg, find_type, etc.)
-- Offer strongly typed data models for aircraft telemetry and metadata
+- Offer strongly typed data models with auto-generated Pydantic models for OpenAPI
 - Enable async operations for high-performance applications
 - Include comprehensive filtering and query building capabilities
 - Provide both CLI and library interfaces for flexibility
+- Maintain dual API support with consistent patterns and interfaces
 
 ## Tech Stack
 
@@ -20,11 +21,13 @@
 - **Python 3.10+**: Minimum supported version
 - **Pydantic 2.x**: Data validation and settings management with strong typing
 - **Typer**: CLI framework for command-line interface
-- **httpx** (planned): Async HTTP client for API requests
+- **httpx**: Async HTTP client for API requests
+- **datamodel-code-generator**: Auto-generates Pydantic models from OpenAPI specifications
 
 ### Development Tools
 
 - **pytest**: Testing framework with async support (pytest-asyncio)
+- **respx**: HTTP mocking for testing async clients
 - **mypy**: Static type checking
 - **ruff**: Fast Python linter and formatter
 - **setuptools_scm**: Version management from git tags
@@ -106,10 +109,12 @@ ADS-B (Automatic Dependent Surveillance-Broadcast) is a surveillance technology 
 ### ADSB.lol Network
 
 - Community-driven ADS-B aggregation network
-- Provides free API access to feeders (contributors)
-- Uses readsb as the underlying software
-- API endpoint: `https://re-api.adsb.lol/`
-- Access restricted by feeder IP addresses (requires VPN/proxy for other locations)
+- Provides two API endpoints:
+  - **OpenAPI** (`https://api.adsb.lol`): Public API with official OpenAPI specification, API keys required in future
+  - **RE-API** (`https://re-api.adsb.lol`): Legacy feeder-only API, IP-restricted access for data contributors
+- Uses readsb as the underlying software for RE-API
+- OpenAPI v2 endpoints provide aircraft queries (hex, callsign, type, location, etc.)
+- OpenAPI v0 endpoints provide utility functions (feeder info, routes)
 - License: ODbL 1.0 (Open Database License)
 
 ### Aircraft Data Model
@@ -126,6 +131,27 @@ Aircraft objects contain extensive telemetry including:
 - **Signal**: RSSI, message count, last seen timestamp
 
 ### Query Types
+
+#### OpenAPI Client (Recommended)
+
+1. **V2 Endpoints** (Aircraft Queries):
+   - `get_by_hex`: By ICAO 24-bit identifier
+   - `get_by_callsign`: By flight callsign
+   - `get_by_registration`: By aircraft registration
+   - `get_by_type`: By aircraft type code (e.g., A321, B738)
+   - `get_by_squawk`: By squawk code
+   - `get_by_point`: Aircraft within radius of coordinates
+   - `get_closest`: Single closest aircraft within radius
+   - `get_mil`: Military aircraft
+   - `get_pia`: Privacy (PIA) flagged aircraft
+   - `get_ladd`: LADD-protected aircraft
+
+2. **V0 Endpoints** (Utility):
+   - `get_me`: Feeder information and global stats
+   - `get_routes`: Route information for aircraft
+   - `get_airport`: Airport information by ICAO code (if available)
+
+#### RE-API Client (Legacy)
 
 1. **Spatial Queries**:
    - `circle`: Aircraft within radius of a point (includes distance and direction)
@@ -172,10 +198,20 @@ Aircraft objects contain extensive telemetry including:
 
 ### API Access
 
-- **Feeder-Only**: API only accessible from feeder IP addresses
-- **Rate Limiting**: Be respectful of API resources (implement reasonable timeouts and retries)
-- **Data Freshness**: API cache frequency controlled by `--write-json-every` (typically 1 second for aircraft data)
-- **No Authentication**: IP-based access control only
+- **OpenAPI Client**:
+  - Publicly accessible endpoint (`https://api.adsb.lol`)
+  - API keys will be required in the future (currently optional)
+  - Rate limiting may apply (watch for 429 responses)
+  - Official OpenAPI 3.1.0 specification available
+  - Spec version tracked in `adsblol/client/openapi_version.py`
+  - Models auto-generated from spec using `datamodel-code-generator`
+
+- **RE-API Client (Legacy)**:
+  - Feeder-only API accessible from feeder IP addresses
+  - IP-based access control only (no authentication)
+  - Rate limiting: Be respectful of API resources
+  - Data freshness controlled by `--write-json-every` (typically 1 second)
+  - Requires VPN/proxy for non-feeder access
 
 ### Technical
 
@@ -201,7 +237,24 @@ Aircraft objects contain extensive telemetry including:
 
 ## External Dependencies
 
-### Primary API
+### Primary APIs
+
+#### OpenAPI (Recommended)
+
+- **Service**: adsb.lol OpenAPI
+- **Endpoint**: `https://api.adsb.lol`
+- **Documentation**:
+  - API Docs: <https://api.adsb.lol/docs>
+  - OpenAPI Spec: <https://api.adsb.lol/api/openapi.json>
+  - Current Version: 0.0.2
+- **Example Queries**:
+  - <https://api.adsb.lol/api/v2/hex/4CA87C>
+  - <https://api.adsb.lol/api/v2/mil>
+- **Protocol**: HTTPS with RESTful paths
+- **Response Format**: JSON (validated against OpenAPI spec)
+- **Authentication**: API key support (optional now, required future)
+
+#### RE-API (Legacy)
 
 - **Service**: adsb.lol re-api (readsb HTTP API)
 - **Endpoint**: `https://re-api.adsb.lol/`
@@ -212,19 +265,22 @@ Aircraft objects contain extensive telemetry including:
 - **Example Query**: <https://re-api.adsb.lol/?circle=52,2,200>
 - **Protocol**: HTTPS with URL query parameters
 - **Response Format**: JSON
+- **Authentication**: IP-based (feeder IPs only)
 
 ### Python Libraries
 
 - **pydantic**: Data validation and settings (required)
 - **pydantic-settings**: Configuration management (required)
 - **typer**: CLI framework (required)
-- **httpx**: Async HTTP client (to be added for API requests)
+- **httpx**: Async HTTP client for API requests (required)
+- **rich**: Terminal output formatting (required for CLI)
 
 ### Development Dependencies
 
-- **Testing**: pytest, pytest-asyncio, pytest-cov, pytest-pretty
+- **Testing**: pytest, pytest-asyncio, pytest-cov, pytest-pretty, respx (HTTP mocking)
 - **Type Checking**: mypy with pydantic plugin
 - **Linting/Formatting**: ruff
+- **Code Generation**: datamodel-code-generator (OpenAPI to Pydantic), openapi-python-client
 - **Data/Development Tools**: dapperdata (data cleanup), glom (data access), ruamel.yaml
 - **Build Tools**: build, setuptools, setuptools_scm, toml-sort
 

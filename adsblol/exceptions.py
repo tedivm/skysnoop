@@ -61,3 +61,74 @@ class TimeoutError(ADSBLolError):
     """
 
     pass
+
+
+class OpenAPIValidationError(ADSBLolError):
+    """Raised when the OpenAPI endpoint returns a 422 validation error.
+
+    This exception indicates that the request parameters failed server-side
+    validation. The exception includes detailed field-level error information
+    from the API response.
+
+    Attributes:
+        details: List of validation error details from the API
+        status_code: HTTP status code (422)
+
+    Examples:
+        - Invalid parameter format
+        - Missing required parameters
+        - Parameter value out of acceptable range
+    """
+
+    def __init__(self, message: str, details: list | None = None, status_code: int = 422):
+        """Initialize OpenAPIValidationError.
+
+        Args:
+            message: Error message
+            details: Optional list of validation error details
+            status_code: HTTP status code
+        """
+        super().__init__(message)
+        self.details = details or []
+        self.status_code = status_code
+
+
+class AuthenticationError(ADSBLolError):
+    """Raised when the OpenAPI endpoint returns a 401 authentication error.
+
+    This exception indicates that the API key is missing, invalid, or expired.
+    Users need to provide a valid API key to access protected endpoints.
+
+    Examples:
+        - No API key provided for protected endpoint
+        - Invalid or malformed API key
+        - Expired API key
+    """
+
+    pass
+
+
+class RateLimitError(ADSBLolError):
+    """Raised when the OpenAPI endpoint returns a 429 rate limit error.
+
+    This exception indicates that the client has exceeded the rate limit for
+    API requests. The retry_after attribute indicates how long to wait before
+    making another request.
+
+    Attributes:
+        retry_after: Optional number of seconds to wait before retrying
+
+    Examples:
+        - Too many requests in a short time period
+        - Exceeded daily/hourly API quota
+    """
+
+    def __init__(self, message: str, retry_after: int | None = None):
+        """Initialize RateLimitError.
+
+        Args:
+            message: Error message
+            retry_after: Optional seconds to wait before retrying
+        """
+        super().__init__(message)
+        self.retry_after = retry_after

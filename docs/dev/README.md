@@ -3,6 +3,7 @@
 ## Table of Contents
 
 1. [Architecture](./architecture.md) - System design and component structure
+1. [OpenAPI Client](./openapi-client.md) - OpenAPI-based client documentation
 1. [Testing](./testing.md) - Testing strategy and best practices
 1. [CLI](./cli.md) - Command-line interface development
 1. [Settings](./settings.md) - Configuration and settings management

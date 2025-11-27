@@ -14,24 +14,43 @@ A Python SDK and CLI for querying aircraft data from [adsb.lol](https://adsb.lol
 - 🖥️ **Beautiful CLI**: Rich terminal output with tables and JSON formatting
 - 🔍 **Flexible Filtering**: Filter by altitude, type, callsign, squawk, and more
 - 🧪 **Well-Tested**: >90% code coverage with comprehensive test suite
+- 🔌 **Dual API Support**: Both OpenAPI (public) and RE-API (feeder) clients
 
 ## API Access
 
-This library requires access to the [adsb.lol API](https://adsb.lol/). API access is **free for individuals who feed data to the adsb.lol network** using an ADS-B receiver.
+This library provides **two API clients**:
 
-**Getting API Access:**
+### OpenAPI Client (Public API)
+
+The **OpenAPI client** uses the public `https://api.adsb.lol` endpoint:
+
+- ✅ **Publicly accessible** - no feeder requirement
+- ✅ **Official OpenAPI spec** - auto-generated models
+- ✅ **Type-safe** - full Pydantic v2 validation
+- 🔑 API keys will be required in the future (currently optional)
+
+See [OpenAPI Client Documentation](docs/dev/openapi-client.md) for details.
+
+### RE-API Client (Feeder API)
+
+The **RE-API client** uses the `https://re-api.adsb.lol/` endpoint:
+
+- 🎯 **Feeder-only** - requires feeding data to adsb.lol network
+- 📡 **Legacy API** - original implementation
+- 🔓 No API key required
+
+**Getting Feeder Access:**
 
 1. Set up an ADS-B receiver to feed data to adsb.lol
 2. Visit the [adsb.lol documentation](https://adsb.lol/) for setup instructions
-3. Join the adsb.lol community to get your API credentials
+3. Join the adsb.lol community
 
 **API Documentation:**
 
-- API Endpoint Documentation: [https://api.adsb.lol/docs](https://api.adsb.lol/docs)
+- OpenAPI Documentation: [https://api.adsb.lol/docs](https://api.adsb.lol/docs)
+- OpenAPI Spec: [https://api.adsb.lol/api/openapi.json](https://api.adsb.lol/api/openapi.json)
 - Main Site: [https://adsb.lol](https://adsb.lol)
 - Community Support: Available through the adsb.lol platform
-
-The default API endpoint used by this library is `https://re-api.adsb.lol/`. This endpoint is intended for feeders who contribute data to the network.
 
 ## Installation
 
@@ -51,7 +70,64 @@ pip install -e .
 
 ## Quick Start
 
-### CLI Usage
+### OpenAPI Client (Recommended)
+
+The OpenAPI client provides access to the public API with type-safe, validated responses.
+
+#### CLI Usage
+
+```bash
+# Query military aircraft
+adsblol openapi v2 mil
+
+# Find aircraft by ICAO hex
+adsblol openapi v2 hex 4CA87C
+
+# Find aircraft near a point (within 50nm)
+adsblol openapi v2 point 37.7749 -- -122.4194 50
+
+# Get closest aircraft
+adsblol openapi v2 closest 37.7749 -- -122.4194 100
+
+# Output as JSON
+adsblol openapi v2 mil --json
+```
+
+#### Python Library Usage
+
+```python
+import asyncio
+from adsblol.client import OpenAPIClient
+
+async def main():
+    async with OpenAPIClient() as client:
+        # Query by ICAO hex
+        response = await client.v2.get_by_hex(icao_hex="4CA87C")
+
+        # Query military aircraft
+        response = await client.v2.get_mil()
+
+        # Query by location
+        response = await client.v2.get_by_point(
+            lat=37.7749,
+            lon=-122.4194,
+            radius=50
+        )
+
+        # Access aircraft data
+        for aircraft in response.ac:
+            print(f"{aircraft.hex}: {aircraft.flight} at {aircraft.alt_baro}ft")
+
+asyncio.run(main())
+```
+
+See [OpenAPI Client Documentation](docs/dev/openapi-client.md) for full details.
+
+### RE-API Client (Feeder-Only)
+
+The RE-API client requires feeder access but provides additional functionality.
+
+#### CLI Usage
 
 Query aircraft within 50 nautical miles of San Francisco:
 
@@ -77,7 +153,7 @@ Filter by altitude:
 adsblol circle --above-alt 30000 -- 37.7749 -122.4194 200
 ```
 
-### Python Library Usage
+#### Python Library Usage
 
 ```python
 import asyncio
