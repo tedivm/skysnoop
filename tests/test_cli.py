@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from adsblol.cli import app
-from adsblol.models.response import APIResponse
+from skysnoop.cli import app
+from skysnoop.models.response import APIResponse
 
 runner = CliRunner()
 
@@ -45,10 +45,10 @@ def test_version_command():
     """Test version command."""
     result = runner.invoke(app, ["version"])
     assert result.exit_code == 0
-    assert "adsblol" in result.stdout
+    assert "skysnoop" in result.stdout
 
 
-@patch("adsblol.cli.ADSBLolClient")
+@patch("skysnoop.cli.ReAPIClient")
 def test_circle_command_table_output(mock_client_class, circle_response):
     """Test circle command with table output."""
     mock_client = AsyncMock()
@@ -65,7 +65,7 @@ def test_circle_command_table_output(mock_client_class, circle_response):
     mock_client.circle.assert_called_once()
 
 
-@patch("adsblol.cli.ADSBLolClient")
+@patch("skysnoop.cli.ReAPIClient")
 def test_circle_command_json_output(mock_client_class, circle_response):
     """Test circle command with JSON output."""
     mock_client = AsyncMock()
@@ -83,7 +83,7 @@ def test_circle_command_json_output(mock_client_class, circle_response):
     assert "resultCount" in output
 
 
-@patch("adsblol.cli.ADSBLolClient")
+@patch("skysnoop.cli.ReAPIClient")
 def test_circle_command_with_filters(mock_client_class, circle_response):
     """Test circle command with altitude filter."""
     mock_client = AsyncMock()
@@ -105,7 +105,7 @@ def test_circle_command_with_filters(mock_client_class, circle_response):
     assert call_args.kwargs["filters"].above_alt_baro == 20000
 
 
-@patch("adsblol.cli.ADSBLolClient")
+@patch("skysnoop.cli.ReAPIClient")
 def test_circle_command_empty_results(mock_client_class, empty_response):
     """Test circle command with no results."""
     mock_client = AsyncMock()
@@ -120,7 +120,7 @@ def test_circle_command_empty_results(mock_client_class, empty_response):
     assert "No aircraft found" in result.stdout
 
 
-@patch("adsblol.cli.ADSBLolClient")
+@patch("skysnoop.cli.ReAPIClient")
 def test_closest_command(mock_client_class, single_aircraft_response):
     """Test closest command."""
     mock_client = AsyncMock()
@@ -136,7 +136,7 @@ def test_closest_command(mock_client_class, single_aircraft_response):
     mock_client.closest.assert_called_once()
 
 
-@patch("adsblol.cli.ADSBLolClient")
+@patch("skysnoop.cli.ReAPIClient")
 def test_box_command(mock_client_class, circle_response):
     """Test box command."""
     mock_client = AsyncMock()
@@ -152,7 +152,7 @@ def test_box_command(mock_client_class, circle_response):
     mock_client.box.assert_called_once()
 
 
-@patch("adsblol.cli.ADSBLolClient")
+@patch("skysnoop.cli.ReAPIClient")
 def test_find_hex_command(mock_client_class, single_aircraft_response):
     """Test find-hex command."""
     mock_client = AsyncMock()
@@ -168,7 +168,7 @@ def test_find_hex_command(mock_client_class, single_aircraft_response):
     mock_client.find_hex.assert_called_once_with("a12345")
 
 
-@patch("adsblol.cli.ADSBLolClient")
+@patch("skysnoop.cli.ReAPIClient")
 def test_find_callsign_command(mock_client_class, circle_response):
     """Test find-callsign command."""
     mock_client = AsyncMock()
@@ -184,7 +184,7 @@ def test_find_callsign_command(mock_client_class, circle_response):
     mock_client.find_callsign.assert_called_once_with("UAL123")
 
 
-@patch("adsblol.cli.ADSBLolClient")
+@patch("skysnoop.cli.ReAPIClient")
 def test_find_reg_command(mock_client_class, single_aircraft_response):
     """Test find-reg command."""
     mock_client = AsyncMock()
@@ -200,7 +200,7 @@ def test_find_reg_command(mock_client_class, single_aircraft_response):
     mock_client.find_reg.assert_called_once_with("N12345")
 
 
-@patch("adsblol.cli.ADSBLolClient")
+@patch("skysnoop.cli.ReAPIClient")
 def test_find_type_command(mock_client_class, circle_response):
     """Test find-type command."""
     mock_client = AsyncMock()
@@ -216,7 +216,7 @@ def test_find_type_command(mock_client_class, circle_response):
     mock_client.find_type.assert_called_once_with("A321")
 
 
-@patch("adsblol.cli.ADSBLolClient")
+@patch("skysnoop.cli.ReAPIClient")
 def test_all_aircraft_command_with_position(mock_client_class, circle_response):
     """Test all-aircraft command (default: with position only)."""
     mock_client = AsyncMock()
@@ -233,7 +233,7 @@ def test_all_aircraft_command_with_position(mock_client_class, circle_response):
     mock_client.all.assert_not_called()
 
 
-@patch("adsblol.cli.ADSBLolClient")
+@patch("skysnoop.cli.ReAPIClient")
 def test_all_aircraft_command_include_no_position(mock_client_class, circle_response):
     """Test all-aircraft command with --include-no-position flag."""
     mock_client = AsyncMock()
@@ -250,7 +250,7 @@ def test_all_aircraft_command_include_no_position(mock_client_class, circle_resp
     mock_client.all_with_pos.assert_not_called()
 
 
-@patch("adsblol.cli.ADSBLolClient")
+@patch("skysnoop.cli.ReAPIClient")
 def test_all_aircraft_command_with_filters(mock_client_class, circle_response):
     """Test all-aircraft command with filters."""
     mock_client = AsyncMock()
@@ -268,10 +268,10 @@ def test_all_aircraft_command_with_filters(mock_client_class, circle_response):
     assert call_args.kwargs["filters"].callsign_prefix == "UAL"
 
 
-@patch("adsblol.cli.ADSBLolClient")
+@patch("skysnoop.cli.ReAPIClient")
 def test_error_handling_api_error(mock_client_class):
     """Test error handling for API errors."""
-    from adsblol.exceptions import APIError
+    from skysnoop.exceptions import APIError
 
     mock_client = AsyncMock()
     mock_client.circle.side_effect = APIError("API request failed")
@@ -286,10 +286,10 @@ def test_error_handling_api_error(mock_client_class):
     assert isinstance(result.exception, SystemExit)
 
 
-@patch("adsblol.cli.ADSBLolClient")
+@patch("skysnoop.cli.ReAPIClient")
 def test_error_handling_timeout(mock_client_class):
     """Test error handling for timeout errors."""
-    from adsblol.exceptions import TimeoutError
+    from skysnoop.exceptions import TimeoutError
 
     mock_client = AsyncMock()
     mock_client.circle.side_effect = TimeoutError("Request timed out")
@@ -303,10 +303,10 @@ def test_error_handling_timeout(mock_client_class):
     assert isinstance(result.exception, SystemExit)
 
 
-@patch("adsblol.cli.ADSBLolClient")
+@patch("skysnoop.cli.ReAPIClient")
 def test_error_handling_validation_error(mock_client_class):
     """Test error handling for validation errors."""
-    from adsblol.exceptions import ValidationError
+    from skysnoop.exceptions import ValidationError
 
     mock_client = AsyncMock()
     mock_client.circle.side_effect = ValidationError("Invalid parameters")

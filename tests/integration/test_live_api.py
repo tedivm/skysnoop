@@ -11,10 +11,10 @@ Skip by default to avoid failures in CI/non-feeder environments.
 
 import pytest
 
-from adsblol.client.base import BaseHTTPClient
-from adsblol.models.response import APIResponse
-from adsblol.query.builder import QueryBuilder
-from adsblol.query.filters import QueryFilters
+from skysnoop.client.base import BaseHTTPClient
+from skysnoop.models.response import APIResponse
+from skysnoop.query.builder import QueryBuilder
+from skysnoop.query.filters import QueryFilters
 
 pytestmark = pytest.mark.live_api
 

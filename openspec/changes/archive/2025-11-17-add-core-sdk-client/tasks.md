@@ -15,7 +15,7 @@ Implementation checklist for the core SDK client functionality. Complete tasks i
 
 - **Phase 1**: Foundation (6 tasks) - Data models and exceptions
 - **Phase 2**: HTTP Client & Query Building (8 tasks) - BaseHTTPClient, QueryBuilder, QueryFilters
-- **Phase 3**: High-Level API Client (4 tasks) - ADSBLolClient with all query methods
+- **Phase 3**: High-Level API Client (4 tasks) - ReAPIClient with all query methods
 - **Phase 4**: CLI Commands (6 tasks) - 8 commands with Rich output, filters, error handling
 - **Phase 5**: Documentation & Polish (3 tasks) - Comprehensive README, developer docs
 - **Phase 6**: Final Validation (5 tasks) - Tests, type checking, linting, review
@@ -107,7 +107,7 @@ Implementation checklist for the core SDK client functionality. Complete tasks i
 
 - [x] **Task 2.6**: Create `adsblol/client/__init__.py` with client exports
   - Create client package directory
-  - Add `__init__.py` with imports for BaseHTTPClient and ADSBLolClient
+  - Add `__init__.py` with imports for BaseHTTPClient and ReAPIClient
   - **Validation**: Verify imports work
 
 - [x] **Task 2.7**: Implement `adsblol/client/base.py` with BaseHTTPClient
@@ -129,7 +129,7 @@ Implementation checklist for the core SDK client functionality. Complete tasks i
 
 ## Phase 3: High-Level API Client ✅
 
-- [x] **Task 3.1**: Implement `adsblol/client/api.py` with ADSBLolClient
+- [x] **Task 3.1**: Implement `adsblol/client/api.py` with ReAPIClient
   - Create class that uses BaseHTTPClient and QueryBuilder
   - Accept base_url and timeout in `__init__`, create BaseHTTPClient
   - Implement async context manager support (delegate to BaseHTTPClient)
@@ -138,19 +138,19 @@ Implementation checklist for the core SDK client functionality. Complete tasks i
   - Implement `async def box(lat1, lon1, lat2, lon2, filters=None) -> APIResponse`
   - **Validation**: Unit tests with mocked HTTP responses ✅
 
-- [x] **Task 3.2**: Implement find methods in ADSBLolClient
+- [x] **Task 3.2**: Implement find methods in ReAPIClient
   - Implement `async def find_hex(hex: str, filters=None) -> APIResponse`
   - Implement `async def find_callsign(callsign: str, filters=None) -> APIResponse`
   - Implement `async def find_reg(registration: str, filters=None) -> APIResponse`
   - Implement `async def find_type(type_code: str, filters=None) -> APIResponse`
   - **Validation**: Unit tests with mocked HTTP responses ✅
 
-- [x] **Task 3.3**: Implement bulk methods in ADSBLolClient
+- [x] **Task 3.3**: Implement bulk methods in ReAPIClient
   - Implement `async def all_with_pos(filters=None) -> APIResponse`
   - Implement `async def all(filters=None) -> APIResponse`
   - **Validation**: Unit tests with mocked HTTP responses ✅
 
-- [x] **Task 3.4**: Add comprehensive tests for ADSBLolClient in `tests/client/`
+- [x] **Task 3.4**: Add comprehensive tests for ReAPIClient in `tests/client/`
   - Test each query method with valid parameters using real API response fixtures
   - Test query methods with filters using real API response data
   - Test error handling (network, timeout, invalid response)
@@ -164,7 +164,7 @@ Implementation checklist for the core SDK client functionality. Complete tasks i
 - [x] **Task 4.1**: Extend `adsblol/cli.py` with circle command
   - Add `@app.command()` for `circle(lat, lon, radius, ...filters, json=False)`
   - Use `@syncify` decorator for async support
-  - Create ADSBLolClient, execute query, format output
+  - Create ReAPIClient, execute query, format output
   - Support `--json` flag for JSON output
   - Add common filter flags (--above-alt, --below-alt, --type, etc.)
   - **Validation**: Manual CLI test: `adsblol circle 37.7749 -122.4194 200` ✅
@@ -278,7 +278,7 @@ Implementation checklist for the core SDK client functionality. Complete tasks i
   - Ensure no stubs or TODO comments remain ✅ (grep search confirmed none)
   - Verify all requirements from specs are met ✅
     - Aircraft Data Models: All requirements implemented with comprehensive tests
-    - API Client: BaseHTTPClient and ADSBLolClient fully functional
+    - API Client: BaseHTTPClient and ReAPIClient fully functional
     - Query Filtering: QueryFilters with all filter types
     - CLI Commands: All 8 commands with filters, JSON output, error handling
   - Check that all tasks in this file are complete ✅

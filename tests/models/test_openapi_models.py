@@ -5,9 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from adsblol.models.openapi import (HTTPValidationError,
-                                    V2ResponseLastPosition, V2ResponseModel,
-                                    ValidationError)
+from skysnoop.models.openapi import HTTPValidationError, V2ResponseLastPosition, V2ResponseModel, ValidationError
 
 
 @pytest.fixture

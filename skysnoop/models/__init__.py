@@ -3,6 +3,6 @@
 from .aircraft import Aircraft
 from .response import APIResponse
 
-# OpenAPI models available in adsblol.models.openapi submodule
+# OpenAPI models available in skysnoop.models.openapi submodule
 
 __all__ = ["Aircraft", "APIResponse"]

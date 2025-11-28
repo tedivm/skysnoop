@@ -314,7 +314,7 @@ The system SHALL raise appropriate exceptions for network errors, timeouts, and 
 
 #### Scenario: Handle network connection error
 
-**Given** an ADSBLolClient or OpenAPIClient instance
+**Given** an ReAPIClient or OpenAPIClient instance
 **And** the API is unreachable
 **When** any query method is called
 **Then** an APIError exception is raised
@@ -322,7 +322,7 @@ The system SHALL raise appropriate exceptions for network errors, timeouts, and 
 
 #### Scenario: Handle timeout error
 
-**Given** an ADSBLolClient or OpenAPIClient instance
+**Given** an ReAPIClient or OpenAPIClient instance
 **And** a request that exceeds the timeout duration
 **When** any query method is called
 **Then** a TimeoutError exception is raised
@@ -330,7 +330,7 @@ The system SHALL raise appropriate exceptions for network errors, timeouts, and 
 
 #### Scenario: Handle invalid JSON response
 
-**Given** an ADSBLolClient or OpenAPIClient instance
+**Given** an ReAPIClient or OpenAPIClient instance
 **And** the API returns malformed JSON
 **When** any query method is called
 **Then** an APIError exception is raised
@@ -338,7 +338,7 @@ The system SHALL raise appropriate exceptions for network errors, timeouts, and 
 
 #### Scenario: Handle HTTP error status
 
-**Given** an ADSBLolClient or OpenAPIClient instance
+**Given** an ReAPIClient or OpenAPIClient instance
 **And** the API returns a 4xx or 5xx status code
 **When** any query method is called
 **Then** an APIError exception is raised

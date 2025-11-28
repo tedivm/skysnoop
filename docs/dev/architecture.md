@@ -1,15 +1,15 @@
 # Architecture Documentation
 
-This document describes the architecture and design of the adsblol SDK.
+This document describes the architecture and design of the skysnoop SDK.
 
 ## Overview
 
-The adsblol SDK is organized into several layers, each with specific responsibilities:
+The skysnoop SDK is organized into several layers, each with specific responsibilities:
 
 ```mermaid
 flowchart TD
     CLI["CLI Layer (cli.py)<br/>• Typer commands<br/>• Output formatting (cli_formatters.py)<br/>• Error handling decorators"]
-    API["High-Level API (client/api.py)<br/>• ADSBLolClient<br/>• Convenience methods for queries<br/>• Async context manager"]
+    API["High-Level API (client/api.py)<br/>• ReAPIClient<br/>• Convenience methods for queries<br/>• Async context manager"]
     HTTP["HTTP Client (client/base.py)<br/>• BaseHTTPClient<br/>• HTTP request handling<br/>• Error translation"]
     Query["Query Building (query/)<br/>• QueryBuilder (builder.py)<br/>• QueryFilters (filters.py)<br/>• URL query string construction"]
     Models["Data Models (models/)<br/>• Aircraft (aircraft.py)<br/>• APIResponse (response.py)<br/>• Pydantic validation"]
@@ -24,7 +24,7 @@ flowchart TD
 
 ### CLI Layer
 
-**Location**: `adsblol/cli.py`, `adsblol/cli_formatters.py`
+**Location**: `skysnoop/cli.py`, `skysnoop/cli_formatters.py`
 
 **Purpose**: Provides command-line interface for end users.
 
@@ -45,13 +45,13 @@ flowchart TD
 
 ### High-Level API Client
 
-**Location**: `adsblol/client/api.py`
+**Location**: `skysnoop/client/api.py`
 
 **Purpose**: Provides a developer-friendly interface to the adsb.lol API.
 
 **Key Components**:
 
-- **ADSBLolClient**: Main client class with methods for each query type
+- **ReAPIClient**: Main client class with methods for each query type
 - **Async Context Manager**: Manages HTTP client lifecycle
 - **Method Organization**:
   - Geographic queries: `circle()`, `closest()`, `box()`
@@ -68,7 +68,7 @@ flowchart TD
 
 ### HTTP Client
 
-**Location**: `adsblol/client/base.py`
+**Location**: `skysnoop/client/base.py`
 
 **Purpose**: Handles low-level HTTP communication with the API.
 
@@ -94,7 +94,7 @@ The API requires commas in query parameters (e.g., `circle=37.7,-122.4,50`). Usi
 
 ### Query Building
 
-**Location**: `adsblol/query/builder.py`, `adsblol/query/filters.py`
+**Location**: `skysnoop/query/builder.py`, `skysnoop/query/filters.py`
 
 **Purpose**: Constructs URL query strings for API requests.
 
@@ -131,7 +131,7 @@ response = await http_client.get(query)
 
 ### Data Models
 
-**Location**: `adsblol/models/aircraft.py`, `adsblol/models/response.py`
+**Location**: `skysnoop/models/aircraft.py`, `skysnoop/models/response.py`
 
 **Purpose**: Type-safe data structures for API responses.
 
@@ -150,7 +150,7 @@ response = await http_client.get(query)
 
 ### Exception Hierarchy
 
-**Location**: `adsblol/exceptions.py`
+**Location**: `skysnoop/exceptions.py`
 
 **Purpose**: Custom exceptions for clear error handling.
 
@@ -190,7 +190,7 @@ classDiagram
 1. **User initiates query** (CLI or library)
 
    ```python
-   # CLI: adsblol circle -- 37.7749 -122.4194 50
+   # CLI: skysnoop circle -- 37.7749 -122.4194 50
    # Library: await client.circle(lat=37.7749, lon=-122.4194, radius=50)
    ```
 
@@ -221,7 +221,7 @@ classDiagram
 flowchart TD
     A["HTTP Error (httpx)"] --> B["BaseHTTPClient catches"]
     B --> C["Translates to APIError/TimeoutError"]
-    C --> D["ADSBLolClient propagates"]
+    C --> D["ReAPIClient propagates"]
     D --> E{"Entry Point"}
     E -->|CLI| F["handle_errors decorator catches"]
     E -->|Library| G["User catches"]
@@ -255,7 +255,7 @@ See [testing.md](testing.md) for comprehensive testing documentation.
 
 Used in:
 
-- `ADSBLolClient`
+- `ReAPIClient`
 - `BaseHTTPClient`
 
 Benefits:
@@ -317,7 +317,7 @@ Benefits:
        return query
    ```
 
-2. **Add method to ADSBLolClient**:
+2. **Add method to ReAPIClient**:
 
    ```python
    async def new_query(
@@ -354,7 +354,7 @@ Benefits:
        json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
    ):
        filters = _build_filters(...)
-       async with ADSBLolClient() as client:
+       async with ReAPIClient() as client:
            response = await client.new_query(param1, param2, filters)
        format_output(response, format_type="json" if json_output else settings.cli_output_format)
    ```

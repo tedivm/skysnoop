@@ -14,7 +14,7 @@ graph TB
     end
 
     subgraph "Client Layer"
-        ReAPI[ADSBLolClient<br/>re-api]
+        ReAPI[ReAPIClient<br/>re-api]
         OpenAPI[OpenAPIClient<br/>OpenAPI]
         V2[V2Methods]
         V0[V0Methods]
@@ -81,7 +81,7 @@ graph TB
 
 **Implementation**:
 
-- Keep existing `adsblol.client.api.ADSBLolClient` for re-api (unchanged)
+- Keep existing `adsblol.client.api.ReAPIClient` for re-api (unchanged)
 - Add new `adsblol.client.openapi.OpenAPIClient` for OpenAPI endpoints
 - Users explicitly choose which client based on their needs
 
@@ -129,7 +129,7 @@ graph LR
         end
     end
 
-    F[ADSBLolClient] -.uses.-> A
+    F[ReAPIClient] -.uses.-> A
     F -.uses.-> B
     G[OpenAPIClient.v2] -.uses.-> C
     H[OpenAPIClient.v0] -.uses.-> D
@@ -159,7 +159,7 @@ async with OpenAPIClient(api_key=key) as client:
 
 **Rationale**:
 
-- Consistency with existing ADSBLolClient API
+- Consistency with existing ReAPIClient API
 - Proper resource cleanup via context managers
 - Natural async/await syntax for users
 

@@ -3,7 +3,7 @@
 This package provides classes for constructing API queries and applying filters.
 """
 
-from adsblol.query.builder import QueryBuilder
-from adsblol.query.filters import QueryFilters
+from skysnoop.query.builder import QueryBuilder
+from skysnoop.query.filters import QueryFilters
 
 __all__ = ["QueryBuilder", "QueryFilters"]

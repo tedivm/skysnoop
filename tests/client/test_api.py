@@ -1,4 +1,4 @@
-"""Tests for ADSBLolClient class."""
+"""Tests for ReAPIClient class."""
 
 import json
 from pathlib import Path
@@ -7,10 +7,10 @@ import httpx
 import pytest
 import respx
 
-from adsblol.client.api import ADSBLolClient
-from adsblol.exceptions import APIError
-from adsblol.models.response import APIResponse
-from adsblol.query.filters import QueryFilters
+from skysnoop.client.api import ReAPIClient
+from skysnoop.exceptions import APIError
+from skysnoop.models.response import APIResponse
+from skysnoop.query.filters import QueryFilters
 
 
 @pytest.fixture
@@ -71,7 +71,7 @@ def all_with_pos_response_data(api_responses_dir):
 @pytest.mark.asyncio
 async def test_client_initialization():
     """Test client initialization."""
-    client = ADSBLolClient()
+    client = ReAPIClient()
 
     assert client.base_url == "https://re-api.adsb.lol/"
     assert client.timeout == 30.0
@@ -81,7 +81,7 @@ async def test_client_initialization():
 @pytest.mark.asyncio
 async def test_client_custom_initialization():
     """Test client initialization with custom parameters."""
-    client = ADSBLolClient(base_url="https://custom.api/", timeout=60.0)
+    client = ReAPIClient(base_url="https://custom.api/", timeout=60.0)
 
     assert client.base_url == "https://custom.api/"
     assert client.timeout == 60.0
@@ -90,7 +90,7 @@ async def test_client_custom_initialization():
 @pytest.mark.asyncio
 async def test_client_context_manager():
     """Test client as async context manager."""
-    async with ADSBLolClient() as client:
+    async with ReAPIClient() as client:
         assert client._http_client is not None
 
     # Client should be cleaned up after exit
@@ -106,7 +106,7 @@ async def test_circle_query(circle_response_data):
         return_value=httpx.Response(200, json=circle_response_data)
     )
 
-    async with ADSBLolClient(base_url=base_url) as client:
+    async with ReAPIClient(base_url=base_url) as client:
         response = await client.circle(lat=37.7749, lon=-122.4194, radius=200)
 
         assert isinstance(response, APIResponse)
@@ -125,7 +125,7 @@ async def test_circle_query_with_filters(circle_response_data):
         return_value=httpx.Response(200, json=circle_response_data)
     )
 
-    async with ADSBLolClient(base_url=base_url) as client:
+    async with ReAPIClient(base_url=base_url) as client:
         response = await client.circle(lat=37.7749, lon=-122.4194, radius=200, filters=filters)
 
         assert isinstance(response, APIResponse)
@@ -140,7 +140,7 @@ async def test_closest_query(closest_response_data):
         return_value=httpx.Response(200, json=closest_response_data)
     )
 
-    async with ADSBLolClient(base_url=base_url) as client:
+    async with ReAPIClient(base_url=base_url) as client:
         response = await client.closest(lat=37.7749, lon=-122.4194, radius=500)
 
         assert isinstance(response, APIResponse)
@@ -154,7 +154,7 @@ async def test_box_query(box_response_data):
     base_url = "https://re-api.adsb.lol"
     respx.get(f"{base_url}?box=37.0,38.5,-123.0,-121.0").mock(return_value=httpx.Response(200, json=box_response_data))
 
-    async with ADSBLolClient(base_url=base_url) as client:
+    async with ReAPIClient(base_url=base_url) as client:
         response = await client.box(
             lat_south=37.0,
             lat_north=38.5,
@@ -173,7 +173,7 @@ async def test_find_hex(find_hex_response_data):
     base_url = "https://re-api.adsb.lol"
     respx.get(f"{base_url}?find_hex=a12345").mock(return_value=httpx.Response(200, json=find_hex_response_data))
 
-    async with ADSBLolClient(base_url=base_url) as client:
+    async with ReAPIClient(base_url=base_url) as client:
         response = await client.find_hex("a12345")
 
         assert isinstance(response, APIResponse)
@@ -188,7 +188,7 @@ async def test_find_callsign(find_callsign_response_data):
         return_value=httpx.Response(200, json=find_callsign_response_data)
     )
 
-    async with ADSBLolClient(base_url=base_url) as client:
+    async with ReAPIClient(base_url=base_url) as client:
         response = await client.find_callsign("UAL123")
 
         assert isinstance(response, APIResponse)
@@ -201,7 +201,7 @@ async def test_find_reg(find_hex_response_data):
     base_url = "https://re-api.adsb.lol"
     respx.get(f"{base_url}?find_reg=N12345").mock(return_value=httpx.Response(200, json=find_hex_response_data))
 
-    async with ADSBLolClient(base_url=base_url) as client:
+    async with ReAPIClient(base_url=base_url) as client:
         response = await client.find_reg("N12345")
 
         assert isinstance(response, APIResponse)
@@ -214,7 +214,7 @@ async def test_find_type(find_callsign_response_data):
     base_url = "https://re-api.adsb.lol"
     respx.get(f"{base_url}?find_type=A321").mock(return_value=httpx.Response(200, json=find_callsign_response_data))
 
-    async with ADSBLolClient(base_url=base_url) as client:
+    async with ReAPIClient(base_url=base_url) as client:
         response = await client.find_type("A321")
 
         assert isinstance(response, APIResponse)
@@ -227,7 +227,7 @@ async def test_all_with_pos(all_with_pos_response_data):
     base_url = "https://re-api.adsb.lol"
     respx.get(f"{base_url}?all_with_pos").mock(return_value=httpx.Response(200, json=all_with_pos_response_data))
 
-    async with ADSBLolClient(base_url=base_url) as client:
+    async with ReAPIClient(base_url=base_url) as client:
         response = await client.all_with_pos()
 
         assert isinstance(response, APIResponse)
@@ -241,7 +241,7 @@ async def test_all(circle_response_data):
     base_url = "https://re-api.adsb.lol"
     respx.get(f"{base_url}?all").mock(return_value=httpx.Response(200, json=circle_response_data))
 
-    async with ADSBLolClient(base_url=base_url) as client:
+    async with ReAPIClient(base_url=base_url) as client:
         response = await client.all()
 
         assert isinstance(response, APIResponse)
@@ -250,7 +250,7 @@ async def test_all(circle_response_data):
 @pytest.mark.asyncio
 async def test_method_without_context_manager():
     """Test that methods raise error when called outside context manager."""
-    client = ADSBLolClient()
+    client = ReAPIClient()
 
     with pytest.raises(RuntimeError, match="not initialized"):
         await client.circle(lat=37.7749, lon=-122.4194, radius=200)
@@ -263,7 +263,7 @@ async def test_error_handling(circle_response_data):
     base_url = "https://re-api.adsb.lol"
     respx.get(f"{base_url}?circle=37.7749,-122.4194,200").mock(return_value=httpx.Response(400, text="Bad Request"))
 
-    async with ADSBLolClient(base_url=base_url) as client:
+    async with ReAPIClient(base_url=base_url) as client:
         with pytest.raises(APIError, match="400"):
             await client.circle(lat=37.7749, lon=-122.4194, radius=200)
 
@@ -277,7 +277,7 @@ async def test_connection_reuse(circle_response_data):
     respx.get(f"{base_url}?circle=1,2,100").mock(return_value=httpx.Response(200, json=circle_response_data))
     respx.get(f"{base_url}?circle=3,4,200").mock(return_value=httpx.Response(200, json=circle_response_data))
 
-    async with ADSBLolClient(base_url=base_url) as client:
+    async with ReAPIClient(base_url=base_url) as client:
         # Make multiple requests with the same client
         response1 = await client.circle(lat=1, lon=2, radius=100)
         response2 = await client.circle(lat=3, lon=4, radius=200)
@@ -297,7 +297,7 @@ async def test_response_iteration(circle_response_data):
         return_value=httpx.Response(200, json=circle_response_data)
     )
 
-    async with ADSBLolClient(base_url=base_url) as client:
+    async with ReAPIClient(base_url=base_url) as client:
         response = await client.circle(lat=37.7749, lon=-122.4194, radius=200)
 
         # Test iteration
@@ -323,7 +323,7 @@ async def test_filters_with_multiple_methods(circle_response_data, box_response_
         return_value=httpx.Response(200, json=box_response_data)
     )
 
-    async with ADSBLolClient(base_url=base_url) as client:
+    async with ReAPIClient(base_url=base_url) as client:
         response1 = await client.circle(lat=37.7749, lon=-122.4194, radius=200, filters=filters)
         response2 = await client.box(
             lat_south=37.0,

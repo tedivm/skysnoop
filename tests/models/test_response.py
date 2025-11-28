@@ -1,6 +1,6 @@
-"""Tests for the APIResponse model."""
+"""Tests for APIResponse model."""
 
-from adsblol.models import Aircraft, APIResponse
+from skysnoop.models import Aircraft, APIResponse
 
 
 def test_api_response_with_aircraft(load_api_response):

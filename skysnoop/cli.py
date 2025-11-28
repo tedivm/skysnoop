@@ -5,11 +5,17 @@ from typing import Literal, Optional
 import typer
 
 from .cli_formatters import format_openapi_output, format_output
-from .client.api import ADSBLolClient
+from .client.api import ReAPIClient
 from .client.openapi import OpenAPIClient
-from .exceptions import (ADSBLolError, APIError, AuthenticationError,
-                         OpenAPIValidationError, RateLimitError, TimeoutError,
-                         ValidationError)
+from .exceptions import (
+    APIError,
+    AuthenticationError,
+    OpenAPIValidationError,
+    RateLimitError,
+    SkySnoopError,
+    TimeoutError,
+    ValidationError,
+)
 from .query.filters import QueryFilters
 from .settings import settings
 
@@ -54,7 +60,7 @@ def handle_errors(f):
         except ValidationError as e:
             typer.echo(f"Error: Invalid parameters - {e}", err=True)
             raise typer.Exit(code=1)
-        except ADSBLolError as e:
+        except SkySnoopError as e:
             typer.echo(f"Error: {e}", err=True)
             raise typer.Exit(code=1)
         except Exception as e:
@@ -100,7 +106,7 @@ async def circle(
         interesting=interesting,
     )
 
-    async with ADSBLolClient(
+    async with ReAPIClient(
         base_url=settings.adsb_api_base_url,
         timeout=settings.adsb_api_timeout,
     ) as client:
@@ -139,7 +145,7 @@ async def closest(
         interesting=interesting,
     )
 
-    async with ADSBLolClient(
+    async with ReAPIClient(
         base_url=settings.adsb_api_base_url,
         timeout=settings.adsb_api_timeout,
     ) as client:
@@ -179,7 +185,7 @@ async def box(
         interesting=interesting,
     )
 
-    async with ADSBLolClient(
+    async with ReAPIClient(
         base_url=settings.adsb_api_base_url,
         timeout=settings.adsb_api_timeout,
     ) as client:
@@ -203,7 +209,7 @@ async def find_hex(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Find a specific aircraft by its ICAO hex code."""
-    async with ADSBLolClient(
+    async with ReAPIClient(
         base_url=settings.adsb_api_base_url,
         timeout=settings.adsb_api_timeout,
     ) as client:
@@ -221,7 +227,7 @@ async def find_callsign(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Find aircraft by their callsign."""
-    async with ADSBLolClient(
+    async with ReAPIClient(
         base_url=settings.adsb_api_base_url,
         timeout=settings.adsb_api_timeout,
     ) as client:
@@ -239,7 +245,7 @@ async def find_reg(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Find a specific aircraft by its registration."""
-    async with ADSBLolClient(
+    async with ReAPIClient(
         base_url=settings.adsb_api_base_url,
         timeout=settings.adsb_api_timeout,
     ) as client:
@@ -257,7 +263,7 @@ async def find_type(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Find all aircraft of a specific type."""
-    async with ADSBLolClient(
+    async with ReAPIClient(
         base_url=settings.adsb_api_base_url,
         timeout=settings.adsb_api_timeout,
     ) as client:
@@ -302,7 +308,7 @@ async def all_aircraft(
         interesting=interesting,
     )
 
-    async with ADSBLolClient(
+    async with ReAPIClient(
         base_url=settings.adsb_api_base_url,
         timeout=settings.adsb_api_timeout,
     ) as client:
@@ -394,7 +400,7 @@ def handle_openapi_errors(f):
         except APIError as e:
             typer.echo(f"Error: API request failed - {e}", err=True)
             raise typer.Exit(code=1)
-        except ADSBLolError as e:
+        except SkySnoopError as e:
             typer.echo(f"Error: {e}", err=True)
             raise typer.Exit(code=1)
         except Exception as e:

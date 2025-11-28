@@ -1,21 +1,21 @@
-"""Custom exceptions for the adsblol library.
+"""Custom exceptions for the skysnoop library.
 
 This module defines the exception hierarchy used throughout the library
 for clear and specific error handling.
 """
 
 
-class ADSBLolError(Exception):
-    """Base exception for all adsblol errors.
+class SkySnoopError(Exception):
+    """Base exception for all skysnoop errors.
 
-    All custom exceptions in the adsblol library inherit from this base class,
+    All custom exceptions in the skysnoop library inherit from this base class,
     allowing users to catch all library-specific errors with a single except clause.
     """
 
     pass
 
 
-class APIError(ADSBLolError):
+class APIError(SkySnoopError):
     """Raised when the adsb.lol API returns an error response.
 
     This includes HTTP errors (4xx, 5xx status codes) and malformed responses
@@ -30,7 +30,7 @@ class APIError(ADSBLolError):
     pass
 
 
-class ValidationError(ADSBLolError):
+class ValidationError(SkySnoopError):
     """Raised when input validation fails before making an API request.
 
     This exception is raised when client-side validation detects invalid
@@ -47,7 +47,7 @@ class ValidationError(ADSBLolError):
     pass
 
 
-class TimeoutError(ADSBLolError):
+class TimeoutError(SkySnoopError):
     """Raised when an API request exceeds the configured timeout period.
 
     This exception indicates that the API server did not respond within
@@ -63,7 +63,7 @@ class TimeoutError(ADSBLolError):
     pass
 
 
-class OpenAPIValidationError(ADSBLolError):
+class OpenAPIValidationError(SkySnoopError):
     """Raised when the OpenAPI endpoint returns a 422 validation error.
 
     This exception indicates that the request parameters failed server-side
@@ -93,7 +93,7 @@ class OpenAPIValidationError(ADSBLolError):
         self.status_code = status_code
 
 
-class AuthenticationError(ADSBLolError):
+class AuthenticationError(SkySnoopError):
     """Raised when the OpenAPI endpoint returns a 401 authentication error.
 
     This exception indicates that the API key is missing, invalid, or expired.
@@ -108,7 +108,7 @@ class AuthenticationError(ADSBLolError):
     pass
 
 
-class RateLimitError(ADSBLolError):
+class RateLimitError(SkySnoopError):
     """Raised when the OpenAPI endpoint returns a 429 rate limit error.
 
     This exception indicates that the client has exceeded the rate limit for

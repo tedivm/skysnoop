@@ -161,4 +161,4 @@ cython_debug/
 #.idea/
 
 # scm-version file
-adsblol/_version.py
+skysnoop/_version.py

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`adsblol` is a Python client library for interacting with the [adsb.lol](https://www.adsb.lol/) API. The library provides two clients: a modern OpenAPI-based client for the public API, and a legacy RE-API client for feeder-specific endpoints. Both provide clean, typed, async-first interfaces for querying aircraft position and telemetry data from the adsb.lol network.
+`skysnoop` is a Python client library for interacting with the [adsb.lol](https://www.adsb.lol/) API. The library provides two clients: a modern OpenAPI-based client for the public API, and a legacy RE-API client for feeder-specific endpoints. Both provide clean, typed, async-first interfaces for querying aircraft position and telemetry data from the adsb.lol network.
 
 ### Goals
 
@@ -51,12 +51,12 @@
 
 - **Async-First**: Prefer async/await patterns for I/O operations
 - **Pydantic Models**: Use Pydantic for data models and validation
-- **Settings Management**: Centralized in `adsblol/conf/settings.py` using `pydantic-settings`
+- **Settings Management**: Centralized in `skysnoop/conf/settings.py` using `pydantic-settings`
 - **Separation of Concerns**:
-  - API client code in `adsblol/client/` or `adsblol/api/`
-  - Data models in `adsblol/models/`
-  - CLI commands in `adsblol/cli.py`
-  - Configuration in `adsblol/conf/`
+  - API client code in `skysnoop/client/` or `skysnoop/api/`
+  - Data models in `skysnoop/models/`
+  - CLI commands in `skysnoop/cli.py`
+  - Configuration in `skysnoop/conf/`
 - **Dependency Injection**: Settings and clients passed as parameters
 - **Error Handling**: Specific exception classes, never suppress without logging
 
@@ -203,7 +203,7 @@ Aircraft objects contain extensive telemetry including:
   - API keys will be required in the future (currently optional)
   - Rate limiting may apply (watch for 429 responses)
   - Official OpenAPI 3.1.0 specification available
-  - Spec version tracked in `adsblol/client/openapi_version.py`
+  - Spec version tracked in `skysnoop/client/openapi_version.py`
   - Models auto-generated from spec using `datamodel-code-generator`
 
 - **RE-API Client (Legacy)**:

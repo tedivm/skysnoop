@@ -1,8 +1,8 @@
-"""Tests for the Aircraft model."""
+"""Tests for Aircraft model."""
 
 import pytest
 
-from adsblol.models import Aircraft
+from skysnoop.models import Aircraft
 
 
 def test_aircraft_minimal():

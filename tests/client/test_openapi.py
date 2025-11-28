@@ -7,11 +7,10 @@ import pytest
 import respx
 from httpx import Response
 
-from adsblol.client.openapi import OpenAPIClient
-from adsblol.exceptions import (APIError, AuthenticationError,
-                                OpenAPIValidationError, RateLimitError)
-from adsblol.exceptions import TimeoutError as ADSBTimeoutError
-from adsblol.models.openapi import V2ResponseModel
+from skysnoop.client.openapi import OpenAPIClient
+from skysnoop.exceptions import APIError, AuthenticationError, OpenAPIValidationError, RateLimitError
+from skysnoop.exceptions import TimeoutError as ADSBTimeoutError
+from skysnoop.models.openapi import V2ResponseModel
 
 
 @pytest.fixture

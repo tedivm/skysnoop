@@ -7,9 +7,9 @@ import httpx
 import pytest
 import respx
 
-from adsblol.client.base import BaseHTTPClient
-from adsblol.exceptions import APIError
-from adsblol.exceptions import TimeoutError as ADSBTimeoutError
+from skysnoop.client.base import BaseHTTPClient
+from skysnoop.exceptions import APIError
+from skysnoop.exceptions import TimeoutError as ADSBTimeoutError
 
 
 @pytest.fixture
@@ -57,13 +57,13 @@ async def test_client_context_manager():
 @pytest.mark.asyncio
 async def test_client_user_agent_header():
     """Test that client sets proper User-Agent header."""
-    from adsblol import __version__
+    from skysnoop import __version__
 
     async with BaseHTTPClient(base_url="https://re-api.adsb.lol/") as client:
         assert client._client is not None
         # Check that User-Agent header is set
         assert "User-Agent" in client._client.headers
-        assert client._client.headers["User-Agent"] == f"adsblol/{__version__}"
+        assert client._client.headers["User-Agent"] == f"skysnoop/{__version__}"
 
 
 @pytest.mark.asyncio

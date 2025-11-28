@@ -14,7 +14,7 @@ dependencies = [
 description = ""
 dynamic = ["version"]
 license = {"file" = "LICENSE"}
-name = "adsblol"
+name = "skysnoop"
 readme = {file = "README.md", content-type = "text/markdown"}
 
 [project.optional-dependencies]
@@ -36,13 +36,13 @@ dev = [
 ]
 
 [project.scripts]
-adsblol = "adsblol.cli:app"
+skysnoop = "skysnoop.cli:app"
 
 [tool.coverage.run]
 concurrency = ["thread"]
 omit = [
-  "./adsblol/_version.py",
-  "./adsblol/__init__.py",
+  "./skysnoop/_version.py",
+  "./skysnoop/__init__.py",
   "./tests/*",
 ]
 
@@ -57,18 +57,18 @@ markers = [
 ]
 
 [tool.ruff]
-exclude = [".venv", "./adsblol/_version.py"]
+exclude = [".venv", "./skysnoop/_version.py"]
 line-length = 120
 
 [tool.setuptools.dynamic]
 readme = {file = ["README.md"]}
 
 [tool.setuptools.package-data]
-adsblol = ["py.typed"]
+skysnoop = ["py.typed"]
 
 [tool.setuptools.packages]
 find = {}
 
 [tool.setuptools_scm]
 fallback_version = "0.0.0-dev"
-write_to = "adsblol/_version.py"
+write_to = "skysnoop/_version.py"

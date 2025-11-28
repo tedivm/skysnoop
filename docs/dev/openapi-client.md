@@ -1,6 +1,6 @@
 # OpenAPI Client
 
-The `adsblol` package provides two API clients for accessing aircraft data:
+The `skysnoop` package provides two API clients for accessing aircraft data:
 
 - **OpenAPI Client** (recommended): Modern, auto-generated client based on the official OpenAPI specification
 - **RE-API Client** (legacy): Original client using the feeder-based API
@@ -38,7 +38,7 @@ The OpenAPI client (`OpenAPIClient`) provides access to aircraft data via the pu
 The OpenAPI client is included with the main package:
 
 ```bash
-pip install adsblol
+pip install skysnoop
 ```
 
 For development (includes code generation tools):
@@ -53,10 +53,10 @@ Currently, API keys are **not required** but the client is designed to support t
 
 ### Environment Variable
 
-Set the `ADSBLOL_API_KEY` environment variable:
+Set the `SKYSNOOP_API_KEY` environment variable:
 
 ```bash
-export ADSBLOL_API_KEY="your-api-key-here"
+export SKYSNOOP_API_KEY="your-api-key-here"
 ```
 
 ### Programmatic Configuration
@@ -64,7 +64,7 @@ export ADSBLOL_API_KEY="your-api-key-here"
 Pass the API key directly to the client:
 
 ```python
-from adsblol.client import OpenAPIClient
+from skysnoop.client import OpenAPIClient
 
 async with OpenAPIClient(api_key="your-api-key-here") as client:
     # Use client
@@ -76,7 +76,7 @@ async with OpenAPIClient(api_key="your-api-key-here") as client:
 ### Async Context Manager (Recommended)
 
 ```python
-from adsblol.client import OpenAPIClient
+from skysnoop.client import OpenAPIClient
 
 async def main():
     async with OpenAPIClient() as client:
@@ -95,7 +95,7 @@ asyncio.run(main())
 ### Manual Lifecycle Management
 
 ```python
-from adsblol.client import OpenAPIClient
+from skysnoop.client import OpenAPIClient
 
 async def main():
     client = OpenAPIClient()
@@ -219,7 +219,7 @@ async with OpenAPIClient() as client:
 All v2 methods return a `V2ResponseModel`:
 
 ```python
-from adsblol.models.openapi import V2ResponseModel
+from skysnoop.models.openapi import V2ResponseModel
 
 response: V2ResponseModel = await client.v2.get_by_hex("4CA87C")
 
@@ -264,7 +264,7 @@ for aircraft in response.ac:
 The OpenAPI client raises specific exceptions for different error conditions:
 
 ```python
-from adsblol.exceptions import (
+from skysnoop.exceptions import (
     OpenAPIValidationError,
     AuthenticationError,
     RateLimitError,

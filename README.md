@@ -1,8 +1,8 @@
-# adsblol
+# skysnoop
 
 A Python SDK and CLI for querying aircraft data from [adsb.lol](https://adsb.lol), a community-driven ADS-B aggregation service.
 
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/tedivm/adsblol)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/tedivm/skysnoop)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -57,14 +57,14 @@ The **RE-API client** uses the `https://re-api.adsb.lol/` endpoint:
 ### From PyPI
 
 ```bash
-pip install adsblol
+pip install skysnoop
 ```
 
 ### From Source
 
 ```bash
-git clone https://github.com/tedivm/adsblol.git
-cd adsblol
+git clone https://github.com/tedivm/skysnoop.git
+cd skysnoop
 pip install -e .
 ```
 
@@ -78,26 +78,26 @@ The OpenAPI client provides access to the public API with type-safe, validated r
 
 ```bash
 # Query military aircraft
-adsblol openapi v2 mil
+skysnoop openapi v2 mil
 
 # Find aircraft by ICAO hex
-adsblol openapi v2 hex 4CA87C
+skysnoop openapi v2 hex 4CA87C
 
 # Find aircraft near a point (within 50nm)
-adsblol openapi v2 point 37.7749 -- -122.4194 50
+skysnoop openapi v2 point 37.7749 -- -122.4194 50
 
 # Get closest aircraft
-adsblol openapi v2 closest 37.7749 -- -122.4194 100
+skysnoop openapi v2 closest 37.7749 -- -122.4194 100
 
 # Output as JSON
-adsblol openapi v2 mil --json
+skysnoop openapi v2 mil --json
 ```
 
 #### Python Library Usage
 
 ```python
 import asyncio
-from adsblol.client import OpenAPIClient
+from skysnoop.client import OpenAPIClient
 
 async def main():
     async with OpenAPIClient() as client:
@@ -132,36 +132,36 @@ The RE-API client requires feeder access but provides additional functionality.
 Query aircraft within 50 nautical miles of San Francisco:
 
 ```bash
-adsblol circle -- 37.7749 -122.4194 50
+skysnoop circle -- 37.7749 -122.4194 50
 ```
 
 Find all Airbus A321 aircraft:
 
 ```bash
-adsblol find-type A321
+skysnoop find-type A321
 ```
 
 Get JSON output for programmatic use:
 
 ```bash
-adsblol circle --json -- 37.7749 -122.4194 50
+skysnoop circle --json -- 37.7749 -122.4194 50
 ```
 
 Filter by altitude:
 
 ```bash
-adsblol circle --above-alt 30000 -- 37.7749 -122.4194 200
+skysnoop circle --above-alt 30000 -- 37.7749 -122.4194 200
 ```
 
 #### Python Library Usage
 
 ```python
 import asyncio
-from adsblol.client.api import ADSBLolClient
+from skysnoop.client.api import ReAPIClient
 
 async def main():
     # Create client
-    async with ADSBLolClient() as client:
+    async with ReAPIClient() as client:
         # Query aircraft in a circular area
         response = await client.circle(
             lat=37.7749,
@@ -180,10 +180,10 @@ asyncio.run(main())
 With filters:
 
 ```python
-from adsblol.query.filters import QueryFilters
+from skysnoop.query.filters import QueryFilters
 
 async def main():
-    async with ADSBLolClient() as client:
+    async with ReAPIClient() as client:
         # Create filters
         filters = QueryFilters(
             above_alt_baro=30000,
@@ -211,19 +211,19 @@ asyncio.run(main())
 - **`circle`** - Query aircraft within a radius of a point
 
   ```bash
-  adsblol circle -- <lat> <lon> <radius_nm>
+  skysnoop circle -- <lat> <lon> <radius_nm>
   ```
 
 - **`closest`** - Find the closest aircraft to a point
 
   ```bash
-  adsblol closest -- <lat> <lon> <max_radius_nm>
+  skysnoop closest -- <lat> <lon> <max_radius_nm>
   ```
 
 - **`box`** - Query aircraft within a bounding box
 
   ```bash
-  adsblol box -- <lat_south> <lat_north> <lon_west> <lon_east>
+  skysnoop box -- <lat_south> <lat_north> <lon_west> <lon_east>
   ```
 
 ### Identifier Queries
@@ -231,25 +231,25 @@ asyncio.run(main())
 - **`find-hex`** - Find aircraft by ICAO hex code
 
   ```bash
-  adsblol find-hex <hex_code>
+  skysnoop find-hex <hex_code>
   ```
 
 - **`find-callsign`** - Find aircraft by callsign
 
   ```bash
-  adsblol find-callsign <callsign>
+  skysnoop find-callsign <callsign>
   ```
 
 - **`find-reg`** - Find aircraft by registration
 
   ```bash
-  adsblol find-reg <registration>
+  skysnoop find-reg <registration>
   ```
 
 - **`find-type`** - Find all aircraft of a specific type
 
   ```bash
-  adsblol find-type <type_code>
+  skysnoop find-type <type_code>
   ```
 
 ### Bulk Queries
@@ -257,8 +257,8 @@ asyncio.run(main())
 - **`all-aircraft`** - Query all aircraft (with position by default)
 
   ```bash
-  adsblol all-aircraft
-  adsblol all-aircraft --include-no-position  # Include aircraft without position
+  skysnoop all-aircraft
+  skysnoop all-aircraft --include-no-position  # Include aircraft without position
   ```
 
 ### Common Options
@@ -278,14 +278,14 @@ All geographic and bulk commands support these filters:
 
 ## API Reference
 
-### ADSBLolClient
+### ReAPIClient
 
 Main client class for querying the adsb.lol API.
 
 ```python
-from adsblol.client.api import ADSBLolClient
+from skysnoop.client.api import ReAPIClient
 
-async with ADSBLolClient(
+async with ReAPIClient(
     base_url="https://re-api.adsb.lol/",  # Default API URL
     timeout=30.0  # Request timeout in seconds
 ) as client:
@@ -328,7 +328,7 @@ async with ADSBLolClient(
 Filter criteria for queries.
 
 ```python
-from adsblol.query.filters import QueryFilters
+from skysnoop.query.filters import QueryFilters
 
 filters = QueryFilters(
     callsign_exact="UAL123",        # Exact callsign match
@@ -388,13 +388,13 @@ aircraft_list = response.aircraft
 
 ## Error Handling
 
-The library defines custom exceptions in `adsblol.exceptions`:
+The library defines custom exceptions in `skysnoop.exceptions`:
 
 ```python
-from adsblol.exceptions import ADSBLolError, APIError, TimeoutError, ValidationError
+from skysnoop.exceptions import SkySnoopError, APIError, TimeoutError, ValidationError
 
 try:
-    async with ADSBLolClient() as client:
+    async with ReAPIClient() as client:
         response = await client.circle(lat=37.7749, lon=-122.4194, radius=50)
 except TimeoutError as e:
     print(f"Request timed out: {e}")
@@ -402,13 +402,13 @@ except APIError as e:
     print(f"API error: {e}")
 except ValidationError as e:
     print(f"Invalid parameters: {e}")
-except ADSBLolError as e:
+except SkySnoopError as e:
     print(f"General error: {e}")
 ```
 
 ### Exception Hierarchy
 
-- `ADSBLolError` - Base exception for all library errors
+- `SkySnoopError` - Base exception for all library errors
   - `APIError` - HTTP/API errors (4xx, 5xx responses)
   - `ValidationError` - Invalid parameters or data
   - `TimeoutError` - Request timeout
@@ -418,7 +418,7 @@ except ADSBLolError as e:
 Configure the library via environment variables or settings:
 
 ```python
-from adsblol.settings import settings
+from skysnoop.settings import settings
 
 # Settings can be overridden
 settings.adsb_api_base_url = "https://re-api.adsb.lol/"
@@ -439,8 +439,8 @@ export CLI_OUTPUT_FORMAT="table"
 ### Setup Development Environment
 
 ```bash
-git clone https://github.com/tedivm/adsblol.git
-cd adsblol
+git clone https://github.com/tedivm/skysnoop.git
+cd skysnoop
 make install
 ```
 
@@ -509,7 +509,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **adsb.lol API and service**: [https://adsb.lol](https://adsb.lol)
 - **Developed by**: Robert Hafner
-- **GitHub**: [https://github.com/tedivm/adsblol](https://github.com/tedivm/adsblol)
+- **GitHub**: [https://github.com/tedivm/skysnoop](https://github.com/tedivm/skysnoop)
 
 ## Contributing
 
@@ -523,6 +523,6 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Support
 
-- **Issues**: [https://github.com/tedivm/adsblol/issues](https://github.com/tedivm/adsblol/issues)
-- **Discussions**: [https://github.com/tedivm/adsblol/discussions](https://github.com/tedivm/adsblol/discussions)
+- **Issues**: [https://github.com/tedivm/skysnoop/issues](https://github.com/tedivm/skysnoop/issues)
+- **Discussions**: [https://github.com/tedivm/skysnoop/discussions](https://github.com/tedivm/skysnoop/discussions)
 - **adsb.lol Community**: [https://adsb.lol](https://adsb.lol)

@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-PACKAGE_SLUG=adsblol
+PACKAGE_SLUG=skysnoop
 ifdef CI
 	PYTHON_PYENV :=
 	PYTHON_VERSION := $(shell python --version|cut -d" " -f2)
@@ -126,7 +126,7 @@ openapi-generate: $(PYTHON_VENV)
 	@echo "Generating OpenAPI models from spec..."
 	datamodel-codegen \
 		--input resources/openapi_spec.json \
-		--output adsblol/models/openapi/generated.py \
+		--output skysnoop/models/openapi/generated.py \
 		--target-python-version 3.10 \
 		--output-model-type pydantic_v2.BaseModel \
 		--field-constraints \
@@ -141,28 +141,28 @@ openapi-generate: $(PYTHON_VENV)
 	@VERSION=$$(cat resources/openapi_spec.json | python -c "import sys, json; print(json.load(sys.stdin)['info']['version'])"); \
 	HASH=$$(shasum -a 256 resources/openapi_spec.json | cut -d' ' -f1); \
 	DATE=$$(date +%Y-%m-%d); \
-	echo '"""OpenAPI specification version tracking.' > adsblol/client/openapi_version.py; \
-	echo '' >> adsblol/client/openapi_version.py; \
-	echo 'This file is auto-generated and should not be edited manually.' >> adsblol/client/openapi_version.py; \
-	echo 'Updated via: make openapi-update' >> adsblol/client/openapi_version.py; \
-	echo '"""' >> adsblol/client/openapi_version.py; \
-	echo '' >> adsblol/client/openapi_version.py; \
-	echo '# Version from OpenAPI spec' >> adsblol/client/openapi_version.py; \
-	echo "OPENAPI_VERSION = \"$$VERSION\"" >> adsblol/client/openapi_version.py; \
-	echo '' >> adsblol/client/openapi_version.py; \
-	echo '# SHA256 hash of the OpenAPI spec file' >> adsblol/client/openapi_version.py; \
-	echo "SPEC_HASH = \"$$HASH\"" >> adsblol/client/openapi_version.py; \
-	echo '' >> adsblol/client/openapi_version.py; \
-	echo '# Last update timestamp' >> adsblol/client/openapi_version.py; \
-	echo "SPEC_UPDATED = \"$$DATE\"" >> adsblol/client/openapi_version.py
-	@echo "Models generated in adsblol/models/openapi/generated.py"
+	echo '"""OpenAPI specification version tracking.' > skysnoop/client/openapi_version.py; \
+	echo '' >> skysnoop/client/openapi_version.py; \
+	echo 'This file is auto-generated and should not be edited manually.' >> skysnoop/client/openapi_version.py; \
+	echo 'Updated via: make openapi-update' >> skysnoop/client/openapi_version.py; \
+	echo '"""' >> skysnoop/client/openapi_version.py; \
+	echo '' >> skysnoop/client/openapi_version.py; \
+	echo '# Version from OpenAPI spec' >> skysnoop/client/openapi_version.py; \
+	echo "OPENAPI_VERSION = \"$$VERSION\"" >> skysnoop/client/openapi_version.py; \
+	echo '' >> skysnoop/client/openapi_version.py; \
+	echo '# SHA256 hash of the OpenAPI spec file' >> skysnoop/client/openapi_version.py; \
+	echo "SPEC_HASH = \"$$HASH\"" >> skysnoop/client/openapi_version.py; \
+	echo '' >> skysnoop/client/openapi_version.py; \
+	echo '# Last update timestamp' >> skysnoop/client/openapi_version.py; \
+	echo "SPEC_UPDATED = \"$$DATE\"" >> skysnoop/client/openapi_version.py
+	@echo "Models generated in skysnoop/models/openapi/generated.py"
 
 .PHONY: openapi-update
 openapi-update: openapi-download openapi-generate
 	@echo ""
 	@echo "✓ OpenAPI models updated"
 	@echo "Next steps:"
-	@echo "  1. Review changes: git diff adsblol/models/openapi/"
+	@echo "  1. Review changes: git diff skysnoop/models/openapi/"
 	@echo "  2. Update client methods if endpoints changed"
 	@echo "  3. Run tests: make pytest"
 	@echo "  4. Consider: copilot @.github/prompts/update-openapi-client.prompt.md"

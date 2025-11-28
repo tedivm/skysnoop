@@ -3,7 +3,7 @@
 import pytest
 from pydantic import ValidationError
 
-from adsblol.query.filters import QueryFilters
+from skysnoop.query.filters import QueryFilters
 
 
 def test_query_filters_empty():

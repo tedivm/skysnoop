@@ -6,8 +6,8 @@ from typing import Any, Literal
 from rich.console import Console
 from rich.table import Table
 
-from adsblol.models.openapi import V2ResponseModel
-from adsblol.models.response import APIResponse
+from skysnoop.models.openapi import V2ResponseModel
+from skysnoop.models.response import APIResponse
 
 console = Console()
 

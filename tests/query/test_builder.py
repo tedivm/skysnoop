@@ -1,7 +1,7 @@
 """Tests for QueryBuilder class."""
 
-from adsblol.query.builder import QueryBuilder
-from adsblol.query.filters import QueryFilters
+from skysnoop.query.builder import QueryBuilder
+from skysnoop.query.filters import QueryFilters
 
 
 def test_build_circle_basic():

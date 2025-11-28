@@ -89,12 +89,12 @@ class BaseHTTPClient:
 - Timeout configuration
 - Error handling with custom exceptions
 
-#### ADSBLolClient
+#### ReAPIClient
 
 High-level client with query methods:
 
 ```python
-class ADSBLolClient:
+class ReAPIClient:
     async def circle(
         self,
         lat: float,
@@ -114,7 +114,7 @@ class ADSBLolClient:
 
 #### Design Rationale
 
-- Separation: BaseHTTPClient handles HTTP, ADSBLolClient handles domain logic
+- Separation: BaseHTTPClient handles HTTP, ReAPIClient handles domain logic
 - Async/await for non-blocking I/O
 - Connection reuse via httpx.AsyncClient
 - Type hints for all parameters and return values
@@ -342,7 +342,7 @@ def mock_http_client(sample_aircraft_data) -> AsyncMock:
     return client
 
 @pytest.fixture
-async def api_client() -> ADSBLolClient:
+async def api_client() -> ReAPIClient:
     """Return configured API client"""
 ```
 

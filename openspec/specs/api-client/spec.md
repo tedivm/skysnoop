@@ -1,8 +1,11 @@
 # api-client Specification
 
 ## Purpose
+
 TBD - created by archiving change add-core-sdk-client. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: HTTP Client Base
 
 The system SHALL provide a base HTTP client class that wraps httpx.AsyncClient for communication with the adsb.lol API.
@@ -75,7 +78,7 @@ The system SHALL provide a high-level API client with methods for all adsb.lol q
 
 #### Scenario: Query aircraft in circular area
 
-**Given** an ADSBLolClient instance
+**Given** an ReAPIClient instance
 **And** latitude, longitude, and radius values
 **When** the circle() method is called
 **Then** a request is made with circle query parameters
@@ -84,7 +87,7 @@ The system SHALL provide a high-level API client with methods for all adsb.lol q
 
 #### Scenario: Find closest aircraft
 
-**Given** an ADSBLolClient instance
+**Given** an ReAPIClient instance
 **And** latitude, longitude, and radius values
 **When** the closest() method is called
 **Then** a request is made with closest query parameters
@@ -92,7 +95,7 @@ The system SHALL provide a high-level API client with methods for all adsb.lol q
 
 #### Scenario: Query aircraft in bounding box
 
-**Given** an ADSBLolClient instance
+**Given** an ReAPIClient instance
 **And** latitude/longitude coordinates for opposite corners
 **When** the box() method is called
 **Then** a request is made with box query parameters
@@ -110,7 +113,7 @@ The system SHALL provide methods to lookup aircraft by identifier, callsign, reg
 
 #### Scenario: Find aircraft by ICAO hex
 
-**Given** an ADSBLolClient instance
+**Given** an ReAPIClient instance
 **And** a valid ICAO hex identifier
 **When** the find_hex() method is called
 **Then** a request is made with find_hex query parameter
@@ -118,7 +121,7 @@ The system SHALL provide methods to lookup aircraft by identifier, callsign, reg
 
 #### Scenario: Find aircraft by callsign
 
-**Given** an ADSBLolClient instance
+**Given** an ReAPIClient instance
 **And** a flight callsign string
 **When** the find_callsign() method is called
 **Then** a request is made with find_callsign query parameter
@@ -126,7 +129,7 @@ The system SHALL provide methods to lookup aircraft by identifier, callsign, reg
 
 #### Scenario: Find aircraft by registration
 
-**Given** an ADSBLolClient instance
+**Given** an ReAPIClient instance
 **And** an aircraft registration string
 **When** the find_reg() method is called
 **Then** a request is made with find_reg query parameter
@@ -134,7 +137,7 @@ The system SHALL provide methods to lookup aircraft by identifier, callsign, reg
 
 #### Scenario: Find aircraft by type code
 
-**Given** an ADSBLolClient instance
+**Given** an ReAPIClient instance
 **And** an aircraft type code (e.g., "A321", "B738")
 **When** the find_type() method is called
 **Then** a request is made with find_type query parameter
@@ -152,14 +155,14 @@ The system SHALL provide methods to retrieve all aircraft with or without positi
 
 #### Scenario: Get all aircraft with positions
 
-**Given** an ADSBLolClient instance
+**Given** an ReAPIClient instance
 **When** the all_with_pos() method is called
 **Then** a request is made with all_with_pos query parameter
 **And** an APIResponse with all positioned aircraft is returned
 
 #### Scenario: Get all tracked aircraft
 
-**Given** an ADSBLolClient instance
+**Given** an ReAPIClient instance
 **When** the all() method is called
 **Then** a request is made with all query parameter
 **And** an APIResponse with all aircraft (with or without position) is returned
@@ -176,7 +179,7 @@ The system SHALL accept optional QueryFilters parameter in all query methods.
 
 #### Scenario: Apply filters to circle query
 
-**Given** an ADSBLolClient instance
+**Given** an ReAPIClient instance
 **And** circle query parameters
 **And** a QueryFilters object with altitude and type filters
 **When** the circle() method is called with the filters
@@ -185,7 +188,7 @@ The system SHALL accept optional QueryFilters parameter in all query methods.
 
 #### Scenario: Query without filters
 
-**Given** an ADSBLolClient instance
+**Given** an ReAPIClient instance
 **And** query parameters with no filters
 **When** any query method is called
 **Then** the request includes only the query type parameters
@@ -205,7 +208,7 @@ The system SHALL raise appropriate exceptions for network errors, timeouts, and 
 
 #### Scenario: Handle network connection error
 
-**Given** an ADSBLolClient or OpenAPIClient instance
+**Given** an ReAPIClient or OpenAPIClient instance
 **And** the API is unreachable
 **When** any query method is called
 **Then** an APIError exception is raised
@@ -213,7 +216,7 @@ The system SHALL raise appropriate exceptions for network errors, timeouts, and 
 
 #### Scenario: Handle timeout error
 
-**Given** an ADSBLolClient or OpenAPIClient instance
+**Given** an ReAPIClient or OpenAPIClient instance
 **And** a request that exceeds the timeout duration
 **When** any query method is called
 **Then** a TimeoutError exception is raised
@@ -221,7 +224,7 @@ The system SHALL raise appropriate exceptions for network errors, timeouts, and 
 
 #### Scenario: Handle invalid JSON response
 
-**Given** an ADSBLolClient or OpenAPIClient instance
+**Given** an ReAPIClient or OpenAPIClient instance
 **And** the API returns malformed JSON
 **When** any query method is called
 **Then** an APIError exception is raised
@@ -229,7 +232,7 @@ The system SHALL raise appropriate exceptions for network errors, timeouts, and 
 
 #### Scenario: Handle HTTP error status
 
-**Given** an ADSBLolClient or OpenAPIClient instance
+**Given** an ReAPIClient or OpenAPIClient instance
 **And** the API returns a 4xx or 5xx status code
 **When** any query method is called
 **Then** an APIError exception is raised
@@ -246,7 +249,7 @@ The system SHALL accept a configurable base URL to support testing and alternati
 #### Scenario: Use custom API endpoint
 
 **Given** a custom base URL
-**When** an ADSBLolClient is created with this URL
+**When** an ReAPIClient is created with this URL
 **Then** all requests are sent to the custom endpoint
 **And** query parameters are appended correctly
 
@@ -263,14 +266,14 @@ The system SHALL accept a configurable timeout value for HTTP requests.
 #### Scenario: Use custom timeout value
 
 **Given** a timeout value of 60 seconds
-**When** an ADSBLolClient is created with this timeout
+**When** an ReAPIClient is created with this timeout
 **Then** all requests use the specified timeout
 **And** requests exceeding this duration raise TimeoutError
 
 #### Scenario: Use default timeout
 
 **Given** no timeout is specified
-**When** an ADSBLolClient is created
+**When** an ReAPIClient is created
 **Then** the default timeout of 30 seconds is used
 
 ---
@@ -285,7 +288,7 @@ The system SHALL reuse HTTP connections across multiple requests for efficiency.
 
 #### Scenario: Multiple requests with same client
 
-**Given** an ADSBLolClient instance in an async context
+**Given** an ReAPIClient instance in an async context
 **When** multiple query methods are called sequentially
 **Then** the underlying httpx client connection is reused
 **And** no additional connection overhead is incurred
@@ -302,7 +305,7 @@ The system SHALL return strongly-typed APIResponse objects from all query method
 
 #### Scenario: Return type annotations
 
-**Given** any ADSBLolClient query method
+**Given** any ReAPIClient query method
 **When** inspected with type checking tools
 **Then** the return type is annotated as APIResponse
 **And** mypy type checking passes
@@ -340,7 +343,7 @@ The system SHALL provide an OpenAPI client class for communication with the adsb
 
 #### Scenario: Initialize OpenAPI client from environment
 
-**Given** the ADSBLOL_API_KEY environment variable is set
+**Given** the SKYSNOOP_API_KEY environment variable is set
 **When** an OpenAPIClient is instantiated without an explicit API key
 **Then** it uses the API key from the environment variable
 
@@ -478,7 +481,7 @@ The system SHALL generate Pydantic models from the OpenAPI specification.
 
 **Given** the OpenAPI specification at <https://api.adsb.lol/api/openapi.json>
 **When** the openapi-generate make target is run
-**Then** Pydantic v2 models are generated in adsblol/models/openapi/
+**Then** Pydantic v2 models are generated in skysnoop/models/openapi/
 **And** models include V2Response_Model, V2Response_AcItem, and related schemas
 **And** all models have proper type hints matching the spec
 

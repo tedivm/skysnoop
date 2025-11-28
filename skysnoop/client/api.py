@@ -1,20 +1,20 @@
 """High-level API client for adsb.lol.
 
-This module provides the ADSBLolClient class that offers a convenient
+This module provides the ReAPIClient class that offers a convenient
 interface for querying aircraft data from the adsb.lol API.
 """
 
 from logging import getLogger
 
-from adsblol.client.base import BaseHTTPClient
-from adsblol.models.response import APIResponse
-from adsblol.query.builder import QueryBuilder
-from adsblol.query.filters import QueryFilters
+from skysnoop.client.base import BaseHTTPClient
+from skysnoop.models.response import APIResponse
+from skysnoop.query.builder import QueryBuilder
+from skysnoop.query.filters import QueryFilters
 
 logger = getLogger(__name__)
 
 
-class ADSBLolClient:
+class ReAPIClient:
     """High-level client for adsb.lol API.
 
     Provides convenient methods for all query types supported by the API.
@@ -22,7 +22,7 @@ class ADSBLolClient:
     into typed models.
 
     Example:
-        async with ADSBLolClient() as client:
+        async with ReAPIClient() as client:
             # Search for aircraft near San Francisco
             response = await client.circle(lat=37.7749, lon=-122.4194, radius=200)
             print(f"Found {response.count} aircraft")
@@ -43,7 +43,7 @@ class ADSBLolClient:
         self.timeout = timeout
         self._http_client: BaseHTTPClient | None = None
 
-    async def __aenter__(self) -> "ADSBLolClient":
+    async def __aenter__(self) -> "ReAPIClient":
         """Enter async context manager."""
         self._http_client = BaseHTTPClient(base_url=self.base_url, timeout=self.timeout)
         await self._http_client.__aenter__()

@@ -1,6 +1,6 @@
 # Testing Documentation
 
-This document describes the testing strategy and practices for the adsblol SDK.
+This document describes the testing strategy and practices for the skysnoop SDK.
 
 ## Testing Philosophy
 
@@ -26,7 +26,7 @@ graph TD
     tests --> conftest["conftest.py<br/><i>Shared fixtures and config</i>"]
 
     client --> base["test_base.py<br/><i>BaseHTTPClient tests (12 tests)</i>"]
-    client --> api["test_api.py<br/><i>ADSBLolClient tests (18 tests)</i>"]
+    client --> api["test_api.py<br/><i>ReAPIClient tests (18 tests)</i>"]
 
     models --> aircraft["test_aircraft.py<br/><i>Aircraft model (10 tests)</i>"]
     models --> response["test_response.py<br/><i>APIResponse model (13 tests)</i>"]
@@ -193,7 +193,7 @@ from typer.testing import CliRunner
 
 runner = CliRunner()
 
-@patch("adsblol.cli.ADSBLolClient")
+@patch("skysnoop.cli.ReAPIClient")
 def test_circle_command_table_output(mock_client_class, circle_response):
     """Test circle command with table output."""
     mock_client = AsyncMock()
@@ -212,7 +212,7 @@ def test_circle_command_table_output(mock_client_class, circle_response):
 **Best Practices**:
 
 - Use `CliRunner` from typer.testing
-- Mock ADSBLolClient entirely
+- Mock ReAPIClient entirely
 - Use `AsyncMock` for async methods
 - Verify command output
 - Test both table and JSON output
@@ -479,7 +479,7 @@ async def test_large_response_performance():
     """Test handling of large responses."""
     start = time.time()
 
-    async with ADSBLolClient() as client:
+    async with ReAPIClient() as client:
         response = await client.all_with_pos()
 
     elapsed = time.time() - start

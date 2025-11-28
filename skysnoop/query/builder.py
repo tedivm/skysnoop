@@ -5,7 +5,7 @@ query strings for the adsb.lol API. Query strings are returned as strings (NOT d
 to avoid httpx URL-encoding commas, which would break the API.
 """
 
-from adsblol.query.filters import QueryFilters
+from skysnoop.query.filters import QueryFilters
 
 
 class QueryBuilder:

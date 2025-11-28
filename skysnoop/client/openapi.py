@@ -11,12 +11,11 @@ from typing import Any
 
 import httpx
 
-from adsblol import __version__
-from adsblol.client.openapi_version import OPENAPI_VERSION, SPEC_UPDATED
-from adsblol.exceptions import (APIError, AuthenticationError,
-                                OpenAPIValidationError, RateLimitError)
-from adsblol.exceptions import TimeoutError as ADSBTimeoutError
-from adsblol.models.openapi import V2ResponseModel
+from skysnoop import __version__
+from skysnoop.client.openapi_version import OPENAPI_VERSION, SPEC_UPDATED
+from skysnoop.exceptions import APIError, AuthenticationError, OpenAPIValidationError, RateLimitError
+from skysnoop.exceptions import TimeoutError as ADSBTimeoutError
+from skysnoop.models.openapi import V2ResponseModel
 
 logger = getLogger(__name__)
 
@@ -291,7 +290,7 @@ class OpenAPIClient:
 
     async def __aenter__(self) -> "OpenAPIClient":
         """Enter async context manager."""
-        headers = {"User-Agent": f"adsblol/{__version__}"}
+        headers = {"User-Agent": f"skysnoop/{__version__}"}
 
         # Add API key if provided
         if self.api_key:

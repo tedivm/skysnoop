@@ -9,9 +9,9 @@ from typing import Any
 
 import httpx
 
-from adsblol import __version__
-from adsblol.exceptions import APIError
-from adsblol.exceptions import TimeoutError as ADSBTimeoutError
+from skysnoop import __version__
+from skysnoop.exceptions import APIError
+from skysnoop.exceptions import TimeoutError as ADSBTimeoutError
 
 logger = getLogger(__name__)
 
@@ -48,7 +48,7 @@ class BaseHTTPClient:
     async def __aenter__(self) -> "BaseHTTPClient":
         """Enter async context manager."""
         # Set user agent header with project name and version
-        headers = {"User-Agent": f"adsblol/{__version__}"}
+        headers = {"User-Agent": f"skysnoop/{__version__}"}
 
         self._client = httpx.AsyncClient(
             timeout=self.timeout,

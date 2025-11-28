@@ -291,7 +291,7 @@ The system SHALL organize models by API type to prevent naming conflicts.
 **Given** a user wants to use re-api models
 **When** importing from adsblol.models
 **Then** Aircraft and APIResponse are available
-**And** they work with ADSBLolClient responses
+**And** they work with ReAPIClient responses
 
 #### Scenario: Import OpenAPI v2 models
 

@@ -8,8 +8,8 @@ Note: Unlike re-api tests, these CAN run in CI as the OpenAPI is globally access
 
 import pytest
 
-from adsblol.client.openapi import OpenAPIClient
-from adsblol.models.openapi import V2ResponseModel
+from skysnoop.client.openapi import OpenAPIClient
+from skysnoop.models.openapi import V2ResponseModel
 
 # Mark all tests in this module as live_openapi tests
 pytestmark = pytest.mark.live_openapi
