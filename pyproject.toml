@@ -9,7 +9,7 @@ dependencies = [
   "pydantic~=2.0",
   "pydantic-settings",
   "rich",
-  "typer",
+  "typer"
 ]
 description = ""
 dynamic = ["version"]
@@ -32,7 +32,7 @@ dev = [
   "respx",
   "ruamel.yaml",
   "ruff",
-  "toml-sort",
+  "toml-sort"
 ]
 
 [project.scripts]
@@ -43,7 +43,7 @@ concurrency = ["thread"]
 omit = [
   "./skysnoop/_version.py",
   "./skysnoop/__init__.py",
-  "./tests/*",
+  "./tests/*"
 ]
 
 [tool.mypy]
@@ -53,7 +53,7 @@ plugins = ["pydantic.mypy"]
 asyncio_default_fixture_loop_scope = "function"
 markers = [
   "live_api: marks tests that require access to the live adsb.lol re-api (feeder-only, deselect with '-m \"not live_api\"')",
-  "live_openapi: marks tests that require access to the live adsb.lol OpenAPI (globally accessible, deselect with '-m \"not live_openapi\"')",
+  "live_openapi: marks tests that require access to the live adsb.lol OpenAPI (globally accessible, deselect with '-m \"not live_openapi\"')"
 ]
 
 [tool.ruff]

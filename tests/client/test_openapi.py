@@ -72,9 +72,7 @@ async def test_v2_get_mil(load_openapi_response):
     """Test v2.get_mil() method."""
     data = load_openapi_response("v2_mil_response.json")
 
-    route = respx.get("https://api.adsb.lol/v2/mil").mock(
-        return_value=Response(200, json=data)
-    )
+    route = respx.get("https://api.adsb.lol/v2/mil").mock(return_value=Response(200, json=data))
 
     async with OpenAPIClient() as client:
         response = await client.v2.get_mil()
@@ -90,9 +88,7 @@ async def test_v2_get_pia(load_openapi_response):
     """Test v2.get_pia() method."""
     data = load_openapi_response("v2_pia_response.json")
 
-    route = respx.get("https://api.adsb.lol/v2/pia").mock(
-        return_value=Response(200, json=data)
-    )
+    route = respx.get("https://api.adsb.lol/v2/pia").mock(return_value=Response(200, json=data))
 
     async with OpenAPIClient() as client:
         response = await client.v2.get_pia()
@@ -107,9 +103,7 @@ async def test_v2_get_by_hex(load_openapi_response):
     """Test v2.get_by_hex() method."""
     data = load_openapi_response("v2_hex_single.json")
 
-    route = respx.get("https://api.adsb.lol/v2/hex/ae5a06").mock(
-        return_value=Response(200, json=data)
-    )
+    route = respx.get("https://api.adsb.lol/v2/hex/ae5a06").mock(return_value=Response(200, json=data))
 
     async with OpenAPIClient() as client:
         response = await client.v2.get_by_hex(icao_hex="ae5a06")
@@ -126,9 +120,7 @@ async def test_v2_get_by_hex_zero_results(load_openapi_response):
     """Test v2.get_by_hex() with zero results."""
     data = load_openapi_response("v2_hex_zero_results.json")
 
-    route = respx.get("https://api.adsb.lol/v2/hex/000000").mock(
-        return_value=Response(200, json=data)
-    )
+    route = respx.get("https://api.adsb.lol/v2/hex/000000").mock(return_value=Response(200, json=data))
 
     async with OpenAPIClient() as client:
         response = await client.v2.get_by_hex(icao_hex="000000")
@@ -144,9 +136,7 @@ async def test_v2_get_by_point(load_openapi_response):
     """Test v2.get_by_point() method."""
     data = load_openapi_response("v2_point_response.json")
 
-    route = respx.get("https://api.adsb.lol/v2/point/37.7749/-122.4194/50").mock(
-        return_value=Response(200, json=data)
-    )
+    route = respx.get("https://api.adsb.lol/v2/point/37.7749/-122.4194/50").mock(return_value=Response(200, json=data))
 
     async with OpenAPIClient() as client:
         response = await client.v2.get_by_point(lat=37.7749, lon=-122.4194, radius=50)
@@ -168,9 +158,7 @@ async def test_v2_get_by_callsign():
         "total": 0,
     }
 
-    route = respx.get("https://api.adsb.lol/v2/callsign/UAL123").mock(
-        return_value=Response(200, json=mock_data)
-    )
+    route = respx.get("https://api.adsb.lol/v2/callsign/UAL123").mock(return_value=Response(200, json=mock_data))
 
     async with OpenAPIClient() as client:
         response = await client.v2.get_by_callsign(callsign="UAL123")
@@ -193,9 +181,7 @@ async def test_validation_error_422():
         ]
     }
 
-    route = respx.get("https://api.adsb.lol/v2/point/999/0/50").mock(
-        return_value=Response(422, json=error_data)
-    )
+    route = respx.get("https://api.adsb.lol/v2/point/999/0/50").mock(return_value=Response(422, json=error_data))
 
     with pytest.raises(OpenAPIValidationError) as exc_info:
         async with OpenAPIClient() as client:
@@ -210,9 +196,7 @@ async def test_validation_error_422():
 @respx.mock
 async def test_authentication_error_401():
     """Test handling of 401 authentication errors."""
-    route = respx.get("https://api.adsb.lol/v0/me").mock(
-        return_value=Response(401, text="Unauthorized")
-    )
+    route = respx.get("https://api.adsb.lol/v0/me").mock(return_value=Response(401, text="Unauthorized"))
 
     with pytest.raises(AuthenticationError):
         async with OpenAPIClient() as client:
@@ -245,9 +229,7 @@ async def test_rate_limit_error_429():
 @respx.mock
 async def test_rate_limit_error_429_no_retry_after():
     """Test 429 error without Retry-After header."""
-    route = respx.get("https://api.adsb.lol/v2/mil").mock(
-        return_value=Response(429, text="Too many requests")
-    )
+    route = respx.get("https://api.adsb.lol/v2/mil").mock(return_value=Response(429, text="Too many requests"))
 
     with pytest.raises(RateLimitError) as exc_info:
         async with OpenAPIClient() as client:
@@ -261,9 +243,7 @@ async def test_rate_limit_error_429_no_retry_after():
 @respx.mock
 async def test_http_error_500():
     """Test handling of 500 server errors."""
-    route = respx.get("https://api.adsb.lol/v2/mil").mock(
-        return_value=Response(500, text="Internal Server Error")
-    )
+    route = respx.get("https://api.adsb.lol/v2/mil").mock(return_value=Response(500, text="Internal Server Error"))
 
     with pytest.raises(APIError):
         async with OpenAPIClient() as client:
@@ -278,9 +258,7 @@ async def test_network_error():
     """Test handling of network errors."""
     import httpx
 
-    route = respx.get("https://api.adsb.lol/v2/mil").mock(
-        side_effect=httpx.ConnectError("Connection failed")
-    )
+    route = respx.get("https://api.adsb.lol/v2/mil").mock(side_effect=httpx.ConnectError("Connection failed"))
 
     with pytest.raises(APIError):
         async with OpenAPIClient() as client:
@@ -295,9 +273,7 @@ async def test_timeout_error():
     """Test handling of timeout errors."""
     import httpx
 
-    route = respx.get("https://api.adsb.lol/v2/mil").mock(
-        side_effect=httpx.TimeoutException("Request timed out")
-    )
+    route = respx.get("https://api.adsb.lol/v2/mil").mock(side_effect=httpx.TimeoutException("Request timed out"))
 
     with pytest.raises(ADSBTimeoutError):
         async with OpenAPIClient() as client:
@@ -310,9 +286,7 @@ async def test_timeout_error():
 @respx.mock
 async def test_invalid_json_response():
     """Test handling of invalid JSON responses."""
-    route = respx.get("https://api.adsb.lol/v2/mil").mock(
-        return_value=Response(200, text="Not valid JSON")
-    )
+    route = respx.get("https://api.adsb.lol/v2/mil").mock(return_value=Response(200, text="Not valid JSON"))
 
     with pytest.raises(APIError):
         async with OpenAPIClient() as client:
@@ -343,9 +317,7 @@ async def test_api_key_in_headers():
         "total": 0,
     }
 
-    route = respx.get("https://api.adsb.lol/v2/mil").mock(
-        return_value=Response(200, json=mock_data)
-    )
+    route = respx.get("https://api.adsb.lol/v2/mil").mock(return_value=Response(200, json=mock_data))
 
     async with OpenAPIClient(api_key="test-key-123") as client:
         await client.v2.get_mil()
@@ -385,9 +357,7 @@ async def test_v0_get_airport():
     """Test v0.get_airport() method."""
     mock_data = {"icao": "KSFO", "name": "San Francisco International Airport"}
 
-    route = respx.get("https://api.adsb.lol/v0/airport/KSFO").mock(
-        return_value=Response(200, json=mock_data)
-    )
+    route = respx.get("https://api.adsb.lol/v0/airport/KSFO").mock(return_value=Response(200, json=mock_data))
 
     async with OpenAPIClient() as client:
         response = await client.v0.get_airport(icao="KSFO")

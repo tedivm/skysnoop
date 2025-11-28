@@ -8,13 +8,13 @@ To update: make openapi-update
 """
 
 from skysnoop.models.openapi.generated import (
-                                               HTTPValidationError,
-                                               PlaneInstance,
-                                               PlaneList,
-                                               V2ResponseAcItem,
-                                               V2ResponseLastPosition,
-                                               V2ResponseModel,
-                                               ValidationError,
+    HTTPValidationError,
+    PlaneInstance,
+    PlaneList,
+    V2ResponseAcItem,
+    V2ResponseLastPosition,
+    V2ResponseModel,
+    ValidationError,
 )
 
 __all__ = [

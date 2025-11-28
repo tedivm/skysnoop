@@ -2,7 +2,6 @@
 
 A Python SDK and CLI for querying aircraft data from [adsb.lol](https://adsb.lol), a community-driven ADS-B aggregation service.
 
-[![Tests](https://img.shields.io/badge/tests-passing-brightgreen)](https://github.com/tedivm/skysnoop)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 

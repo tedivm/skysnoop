@@ -88,9 +88,7 @@ class V2ResponseAcItem(BaseModel):
     track_rate: Optional[float] = Field(None, title="Track Rate")
     wd: Optional[int] = Field(None, title="Wd")
     ws: Optional[int] = Field(None, title="Ws")
-    gps_ok_before: Optional[float] = Field(
-        None, alias="gpsOkBefore", title="Gpsokbefore"
-    )
+    gps_ok_before: Optional[float] = Field(None, alias="gpsOkBefore", title="Gpsokbefore")
     gps_ok_lat: Optional[float] = Field(None, alias="gpsOkLat", title="Gpsoklat")
     gps_ok_lon: Optional[float] = Field(None, alias="gpsOkLon", title="Gpsoklon")
     last_position: Optional[V2ResponseLastPosition] = Field(None, alias="lastPosition")
