@@ -28,7 +28,7 @@ jobs:
         run: make pytest
 
       - name: Run OpenAPI Live Tests
-        run: pytest tests/integration/test_live_openapi.py --run-live-openapi -v
+        run: source .venv/bin/activate && pytest tests/integration/test_live_openapi.py --run-live-openapi -v
         # Note: OpenAPI tests CAN run in CI (globally accessible, no feeder IP required)
         # Future: When API keys are required, add secrets.ADSBLOL_API_KEY
         continue-on-error: false
