@@ -128,7 +128,7 @@ jobs:
 
       - name: Upload Spec Files
         if: steps.compare.outputs.changed == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: openapi-specs
           path: |
