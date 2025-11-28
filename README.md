@@ -27,7 +27,7 @@ The **OpenAPI client** uses the public `https://api.adsb.lol` endpoint:
 - ✅ **Publicly accessible** - no feeder requirement
 - ✅ **Official OpenAPI spec** - auto-generated models
 - ✅ **Type-safe** - full Pydantic v2 validation
-- 🔑 API keys will be required in the future (currently optional)
+- 🔑 API keys will be required in the future (currently unavailable)
 
 See [OpenAPI Client Documentation](docs/dev/openapi-client.md) for details.
 
@@ -37,7 +37,7 @@ The **RE-API client** uses the `https://re-api.adsb.lol/` endpoint:
 
 - 🎯 **Feeder-only** - requires feeding data to adsb.lol network
 - 📡 **Legacy API** - original implementation
-- 🔓 No API key required
+- 🔓 No API key required, but must run from the Feeder IP address
 
 **Getting Feeder Access:**
 
@@ -504,25 +504,3 @@ make chores
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Attribution
-
-- **adsb.lol API and service**: [https://adsb.lol](https://adsb.lol)
-- **Developed by**: Robert Hafner
-- **GitHub**: [https://github.com/tedivm/skysnoop](https://github.com/tedivm/skysnoop)
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## Support
-
-- **Issues**: [https://github.com/tedivm/skysnoop/issues](https://github.com/tedivm/skysnoop/issues)
-- **Discussions**: [https://github.com/tedivm/skysnoop/discussions](https://github.com/tedivm/skysnoop/discussions)
-- **adsb.lol Community**: [https://adsb.lol](https://adsb.lol)
