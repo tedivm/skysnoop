@@ -2,7 +2,8 @@
 
 from .aircraft import Aircraft
 from .response import APIResponse
+from .skydata import SkyData
 
 # OpenAPI models available in skysnoop.models.openapi submodule
 
-__all__ = ["Aircraft", "APIResponse"]
+__all__ = ["Aircraft", "APIResponse", "SkyData"]

@@ -1,448 +1,411 @@
-# OpenAPI Client
+# OpenAPI Client (Developer Documentation)
 
-The `skysnoop` package provides two API clients for accessing aircraft data:
+> **For Users**: See [Advanced Usage](../advanced.md#low-level-clients) for usage examples of the low-level clients.
 
-- **OpenAPI Client** (recommended): Modern, auto-generated client based on the official OpenAPI specification
-- **RE-API Client** (legacy): Original client using the feeder-based API
-
-This document covers the OpenAPI client. For the legacy client, see [API Client](./api-client.md).
+This document covers the internal implementation details of the `OpenAPIClient` low-level client for developers working on the library.
 
 ## Overview
 
-The OpenAPI client (`OpenAPIClient`) provides access to aircraft data via the public `https://api.adsb.lol` API. It features:
+The OpenAPI client (`OpenAPIClient`) is the low-level client that directly communicates with the public adsb.lol API at `https://api.adsb.lol`. It provides:
 
-- **Auto-generated models**: Pydantic models generated from the official OpenAPI spec ensure type safety and validation
-- **Comprehensive coverage**: Supports both v2 (aircraft queries) and v0 (utility) endpoints
-- **Type safety**: Full typing support for all methods and models
-- **Error handling**: Detailed error messages with validation feedback
-- **API key ready**: Optional API key support (required in the future)
+- **Auto-generated Models**: Pydantic models generated from official OpenAPI spec
+- **Namespace Organization**: Separate v2 (aircraft) and v0 (utility) namespaces
+- **Direct API Access**: Makes HTTP requests to OpenAPI endpoints
+- **Native Responses**: Returns `V2ResponseModel` objects (not normalized `SkyData`)
+- **Type Safety**: Full typing through generated models
 
-## When to Use OpenAPI vs RE-API
+**Location**: `skysnoop/client/openapi.py`
 
-### Use OpenAPI Client When
+## Architecture
 
-- You need general aircraft data queries (by hex, callsign, location, etc.)
-- You want official, documented API endpoints
-- You need type-safe, validated responses
-- You're building new integrations (recommended approach)
-- API keys will be available in the future
+```mermaid
+flowchart TD
+    OpenAPIAdapter["OpenAPIAdapter"]
+    OpenAPIClient["OpenAPIClient"]
+    V2Namespace["V2Namespace"]
+    V0Namespace["V0Namespace"]
+    HTTPClient["httpx.AsyncClient"]
+    OpenAPI["OpenAPI Endpoint"]
 
-### Use RE-API Client When
+    OpenAPIAdapter -->|uses| OpenAPIClient
+    OpenAPIClient -->|contains| V2Namespace
+    OpenAPIClient -->|contains| V0Namespace
+    V2Namespace -->|makes requests| HTTPClient
+    V0Namespace -->|makes requests| HTTPClient
+    HTTPClient -->|HTTP GET| OpenAPI
+    OpenAPI -->|JSON response| HTTPClient
+    HTTPClient -->|raw response| V2Namespace
+    V2Namespace -->|V2ResponseModel| OpenAPIAdapter
 
-- You have access to a feeder IP address
-- You need feeder-specific functionality
-- You're maintaining existing code using the RE-API
-
-## Installation
-
-The OpenAPI client is included with the main package:
-
-```bash
-pip install skysnoop
+    style OpenAPIClient fill:#e1f5ff
+    style V2Namespace fill:#fff4e1
+    style V0Namespace fill:#fff4e1
 ```
 
-For development (includes code generation tools):
+## Implementation Details
 
-```bash
-pip install -e ".[dev]"
-```
-
-## API Key Setup (Future Requirement)
-
-Currently, API keys are **not required** but the client is designed to support them when they become mandatory.
-
-### Environment Variable
-
-Set the `SKYSNOOP_API_KEY` environment variable:
-
-```bash
-export SKYSNOOP_API_KEY="your-api-key-here"
-```
-
-### Programmatic Configuration
-
-Pass the API key directly to the client:
+### Constructor
 
 ```python
-from skysnoop.client import OpenAPIClient
+def __init__(
+    self,
+    api_key: str | None = None,
+    base_url: str | None = None,
+    timeout: float = 30.0,
+):
+    """Initialize OpenAPI client."""
+    self.api_key = api_key
+    self.base_url = base_url or "https://api.adsb.lol"
+    self.timeout = timeout
+    self._client: httpx.AsyncClient | None = None
 
-async with OpenAPIClient(api_key="your-api-key-here") as client:
-    # Use client
-    pass
+    # Lazy initialization of namespaces
+    self._v2: V2Namespace | None = None
+    self._v0: V0Namespace | None = None
 ```
 
-## Basic Usage
+**Key Points**:
 
-### Async Context Manager (Recommended)
+- Lazy initialization: HTTP client and namespaces created in `__aenter__`
+- API key stored but not yet used (future requirement)
+- Base URL defaults to production OpenAPI
 
-```python
-from skysnoop.client import OpenAPIClient
-
-async def main():
-    async with OpenAPIClient() as client:
-        # Query aircraft by ICAO hex
-        response = await client.v2.get_by_hex(icao_hex="4CA87C")
-
-        # Access aircraft data
-        for aircraft in response.ac:
-            print(f"{aircraft.hex}: {aircraft.flight} at {aircraft.alt_baro}ft")
-
-# Run async code
-import asyncio
-asyncio.run(main())
-```
-
-### Manual Lifecycle Management
+### Context Manager Implementation
 
 ```python
-from skysnoop.client import OpenAPIClient
+async def __aenter__(self) -> "OpenAPIClient":
+    """Initialize HTTP client and namespaces."""
+    headers = {}
+    if self.api_key:
+        headers["Authorization"] = f"Bearer {self.api_key}"
 
-async def main():
-    client = OpenAPIClient()
-
-    try:
-        response = await client.v2.get_by_hex(icao_hex="4CA87C")
-        print(response)
-    finally:
-        await client.close()
-
-import asyncio
-asyncio.run(main())
-```
-
-## V2 Methods (Aircraft Queries)
-
-### Get Aircraft by ICAO Hex
-
-```python
-async with OpenAPIClient() as client:
-    response = await client.v2.get_by_hex(icao_hex="4CA87C")
-```
-
-### Get Aircraft by Callsign
-
-```python
-async with OpenAPIClient() as client:
-    response = await client.v2.get_by_callsign(callsign="UAL123")
-```
-
-### Get Aircraft by Registration
-
-```python
-async with OpenAPIClient() as client:
-    response = await client.v2.get_by_registration(registration="N12345")
-```
-
-### Get Aircraft by Type
-
-```python
-async with OpenAPIClient() as client:
-    response = await client.v2.get_by_type(aircraft_type="B77W")
-```
-
-### Get Aircraft by Squawk Code
-
-```python
-async with OpenAPIClient() as client:
-    response = await client.v2.get_by_squawk(squawk="7700")  # Emergency
-```
-
-### Get Military Aircraft
-
-```python
-async with OpenAPIClient() as client:
-    response = await client.v2.get_mil()
-```
-
-### Get Privacy (PIA) Flagged Aircraft
-
-```python
-async with OpenAPIClient() as client:
-    response = await client.v2.get_pia()
-```
-
-### Get LADD-Protected Aircraft
-
-```python
-async with OpenAPIClient() as client:
-    response = await client.v2.get_ladd()
-```
-
-### Get Aircraft Near a Point
-
-```python
-async with OpenAPIClient() as client:
-    # Within 50nm of San Francisco
-    response = await client.v2.get_by_point(
-        lat=37.7749,
-        lon=-122.4194,
-        radius=50
+    self._client = httpx.AsyncClient(
+        base_url=self.base_url,
+        timeout=self.timeout,
+        headers=headers,
     )
+
+    self._v2 = V2Namespace(self._client)
+    self._v0 = V0Namespace(self._client)
+
+    return self
+
+async def __aexit__(self, exc_type, exc_val, exc_tb):
+    """Cleanup HTTP client."""
+    if self._client:
+        await self._client.aclose()
+        self._client = None
+        self._v2 = None
+        self._v0 = None
 ```
 
-### Get Closest Aircraft
+**Pattern**: Namespaces are created with shared HTTP client. This allows all requests to share connection pooling and configuration.
+
+### Namespace Properties
 
 ```python
-async with OpenAPIClient() as client:
-    # Find aircraft closest to coordinates within 100nm
-    response = await client.v2.get_closest(
-        lat=37.7749,
-        lon=-122.4194,
-        radius=100
-    )
+@property
+def v2(self) -> "V2Namespace":
+    """Access v2 (aircraft) namespace."""
+    if self._v2 is None:
+        raise RuntimeError("OpenAPIClient must be used as context manager")
+    return self._v2
+
+@property
+def v0(self) -> "V0Namespace":
+    """Access v0 (utility) namespace."""
+    if self._v0 is None:
+        raise RuntimeError("OpenAPIClient must be used as context manager")
+    return self._v0
 ```
 
-## V0 Methods (Utility)
+**Why Properties**: Clear error if user forgets context manager. Type checker sees concrete namespace types, not Optional.
 
-### Get My Feeder Info
+## Namespace Implementation
+
+### V2Namespace (Aircraft Queries)
+
+**Location**: `skysnoop/client/openapi.py`
+
+All v2 methods follow the same pattern:
 
 ```python
-async with OpenAPIClient() as client:
-    response = await client.v0.get_me()
-    print(response)  # Dict with feeder information
+class V2Namespace:
+    """V2 (aircraft) endpoint namespace."""
+
+    def __init__(self, client: httpx.AsyncClient):
+        self._client = client
+
+    async def get_by_hex(self, icao_hex: str) -> V2ResponseModel:
+        """Get aircraft by ICAO hex code."""
+        response = await self._client.get(f"/v2/hex/{icao_hex}")
+        response.raise_for_status()
+        data = response.json()
+        return V2ResponseModel(**data)
 ```
 
-### Get Routes for Aircraft
+**Key Steps**:
+
+1. **HTTP Request**: Use httpx client to GET from endpoint
+2. **Status Check**: Raise error for 4xx/5xx responses
+3. **JSON Parsing**: Parse response to dict
+4. **Model Validation**: Create Pydantic model from dict
+
+**Available Methods**:
+
+- `get_by_hex(icao_hex)`: Get by ICAO hex code
+- `get_by_callsign(callsign)`: Get by callsign
+- `get_by_registration(registration)`: Get by registration
+- `get_by_type(aircraft_type)`: Get by aircraft type
+- `get_by_squawk(squawk)`: Get by squawk code
+- `get_mil()`: Get military aircraft
+- `get_pia()`: Get privacy-flagged aircraft
+- `get_ladd()`: Get LADD-protected aircraft
+- `get_by_point(lat, lon, radius)`: Get aircraft near point
+- `get_closest(lat, lon, radius)`: Get closest aircraft
+
+### V0Namespace (Utility Queries)
+
+**Location**: `skysnoop/client/openapi.py`
+
+V0 endpoints return raw dicts (no models):
 
 ```python
-async with OpenAPIClient() as client:
-    # Get routes for multiple aircraft
-    planes = ["4CA87C", "A12345"]
-    response = await client.v0.get_routes(planes=planes)
-    print(response)  # Dict with route information
+class V0Namespace:
+    """V0 (utility) endpoint namespace."""
+
+    def __init__(self, client: httpx.AsyncClient):
+        self._client = client
+
+    async def get_me(self) -> dict:
+        """Get feeder information."""
+        response = await self._client.get("/v0/me")
+        response.raise_for_status()
+        return response.json()
+
+    async def get_routes(self, planes: list[str]) -> dict:
+        """Get routes for aircraft."""
+        params = {"planes": ",".join(planes)}
+        response = await self._client.get("/v0/routes", params=params)
+        response.raise_for_status()
+        return response.json()
 ```
 
-## Response Models
-
-### V2ResponseModel
-
-All v2 methods return a `V2ResponseModel`:
-
-```python
-from skysnoop.models.openapi import V2ResponseModel
-
-response: V2ResponseModel = await client.v2.get_by_hex("4CA87C")
-
-# Response attributes
-response.ac          # List[V2ResponseAcItem]: Aircraft data
-response.ctime       # float: Current timestamp
-response.msg         # str: Message (e.g., "No error")
-response.now         # float: Current time
-response.ptime       # int: Processing time
-response.total       # int: Total aircraft count
-```
-
-### V2ResponseAcItem
-
-Each aircraft in the response is a `V2ResponseAcItem`:
-
-```python
-for aircraft in response.ac:
-    # Common fields
-    aircraft.hex           # str: ICAO hex code
-    aircraft.flight        # Optional[str]: Callsign
-    aircraft.alt_baro      # Optional[int]: Barometric altitude (feet)
-    aircraft.gs            # Optional[float]: Ground speed (knots)
-    aircraft.track         # Optional[float]: Track/heading (degrees)
-    aircraft.lat           # Optional[float]: Latitude
-    aircraft.lon           # Optional[float]: Longitude
-
-    # Additional fields
-    aircraft.r             # Optional[str]: Registration
-    aircraft.t             # Optional[str]: Aircraft type
-    aircraft.squawk        # Optional[str]: Squawk code
-    aircraft.emergency     # Optional[str]: Emergency status
-    aircraft.category      # Optional[str]: Aircraft category
-    aircraft.nav_altitude_mcp  # Optional[int]: MCP altitude
-    aircraft.nav_heading   # Optional[float]: Nav heading
-
-    # Many more fields available - see generated models
-```
-
-## Error Handling
-
-The OpenAPI client raises specific exceptions for different error conditions:
-
-```python
-from skysnoop.exceptions import (
-    OpenAPIValidationError,
-    AuthenticationError,
-    RateLimitError,
-    APIError
-)
-
-async with OpenAPIClient() as client:
-    try:
-        response = await client.v2.get_by_hex(icao_hex="INVALID")
-    except OpenAPIValidationError as e:
-        # 422 validation error with details
-        print(f"Validation error: {e}")
-        print(f"Details: {e.details}")
-    except AuthenticationError as e:
-        # 401 authentication error
-        print(f"Authentication failed: {e}")
-    except RateLimitError as e:
-        # 429 rate limit error
-        print(f"Rate limited. Retry after: {e.retry_after}")
-    except APIError as e:
-        # Generic API error
-        print(f"API error: {e}")
-```
-
-## CLI Usage
-
-The OpenAPI client is also accessible via CLI commands:
-
-### V2 Commands
-
-```bash
-# Get aircraft by hex
-adsblol openapi v2 hex 4CA87C
-
-# Get military aircraft
-adsblol openapi v2 mil
-
-# Get aircraft near a point (note: use -- before negative longitude)
-adsblol openapi v2 point 37.7749 -- -122.4194 50
-
-# Get closest aircraft
-adsblol openapi v2 closest 37.7749 -- -122.4194 100
-
-# Output as JSON
-adsblol openapi v2 hex 4CA87C --json
-
-# Use API key
-adsblol openapi v2 hex 4CA87C --api-key YOUR_KEY
-```
-
-### V0 Commands
-
-```bash
-# Get feeder info
-adsblol openapi v0 me
-
-# Output as JSON
-adsblol openapi v0 me --json
-```
-
-## Advanced Features
-
-### Logging
-
-The client logs important events including:
-
-- API version on initialization
-- HTTP request details (URL, method)
-- Error responses
-
-Enable debug logging to see all HTTP activity:
-
-```python
-import logging
-
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger("adsblol.client.openapi")
-logger.setLevel(logging.DEBUG)
-```
-
-### Custom HTTP Client Configuration
-
-The OpenAPI client uses `BaseHTTPClient` which is based on `httpx.AsyncClient`. You can customize the underlying HTTP client behavior by modifying the client after initialization:
-
-```python
-async with OpenAPIClient() as client:
-    # Access underlying HTTP client
-    client.client.timeout = httpx.Timeout(30.0)  # Set custom timeout
-```
-
-### Response Validation
-
-All responses are validated against the Pydantic models. If the API returns unexpected data, a validation error will be raised:
-
-```python
-try:
-    response = await client.v2.get_by_hex("4CA87C")
-except Exception as e:
-    print(f"Unexpected response format: {e}")
-```
+**Why No Models**: V0 endpoints have variable structure. Raw dicts provide flexibility.
 
 ## Model Generation
 
-The OpenAPI models are auto-generated from the official API specification. To regenerate models after spec updates:
+### Auto-Generated Models
+
+**Location**: `skysnoop/models/openapi/generated.py`
+
+Models are auto-generated from the official OpenAPI spec using `datamodel-code-generator`:
 
 ```bash
-# Download latest spec and regenerate models
-make openapi-update
+# Generate models from spec
+datamodel-codegen \
+    --input resources/openapi_spec.json \
+    --output skysnoop/models/openapi/generated.py \
+    --input-file-type openapi \
+    --output-model-type pydantic_v2.BaseModel
 ```
 
-This will:
+**Generated Classes**:
 
-1. Download the latest OpenAPI spec from `https://api.adsb.lol/api/openapi.json`
-2. Generate Pydantic models in `adsblol/models/openapi/generated.py`
-3. Update version tracking in `adsblol/client/openapi_version.py`
+- `V2ResponseModel`: Top-level v2 response
+- `V2ResponseAcItem`: Individual aircraft in response
+- Many other models for various fields
 
-## Version Information
-
-Check the current OpenAPI spec version:
+### Model Characteristics
 
 ```python
-from adsblol.client.openapi_version import (
-    OPENAPI_VERSION,
-    SPEC_HASH,
-    SPEC_UPDATED
-)
+class V2ResponseModel(BaseModel):
+    """Auto-generated from OpenAPI spec."""
+    ac: List[V2ResponseAcItem]
+    ctime: float
+    msg: str
+    now: float
+    ptime: int
+    total: int
 
-print(f"OpenAPI Version: {OPENAPI_VERSION}")
-print(f"Spec Hash: {SPEC_HASH}")
-print(f"Last Updated: {SPEC_UPDATED}")
+class V2ResponseAcItem(BaseModel):
+    """Individual aircraft - 100+ optional fields."""
+    hex: str  # Required
+    flight: str | None = None
+    alt_baro: int | None = None
+    gs: float | None = None
+    lat: float | None = None
+    lon: float | None = None
+    r: str | None = None  # registration
+    t: str | None = None  # type
+    squawk: str | None = None
+    emergency: str | None = None
+    category: str | None = None
+    # ... 100+ more fields
 ```
 
-## Testing
+**Key Points**:
+
+- Most fields optional (aircraft may not report all data)
+- Field names match OpenAPI spec exactly (short names like `r`, `t`)
+- Pydantic validation ensures type safety
+- Auto-generated code should not be manually edited
+
+### Keeping Models Updated
+
+When OpenAPI spec changes:
+
+1. Download new spec to `resources/openapi_spec.json`
+2. Run code generator (see above command)
+3. Review generated code for breaking changes
+4. Update `OpenAPIAdapter` normalization if field mappings change
+5. Update tests if response structure changes
+
+## Usage by OpenAPIAdapter
+
+**Location**: `skysnoop/client/adapters/openapi.py`
+
+The `OpenAPIAdapter` wraps `OpenAPIClient` and implements `BackendProtocol`:
+
+```python
+class OpenAPIAdapter:
+    """Adapter for OpenAPI backend."""
+
+    def __init__(
+        self,
+        api_key: str | None = None,
+        base_url: str | None = None,
+        timeout: float = 30.0,
+    ):
+        self._client = OpenAPIClient(
+            api_key=api_key,
+            base_url=base_url,
+            timeout=timeout,
+        )
+
+    async def get_by_hex(self, hex_code: str) -> SkyData:
+        """Get aircraft by hex - implements BackendProtocol."""
+        response = await self._client.v2.get_by_hex(icao_hex=hex_code)
+        return self._normalize_response(response)
+
+    def _normalize_response(self, response: V2ResponseModel) -> SkyData:
+        """Convert V2ResponseModel to SkyData."""
+        # Map OpenAPI fields to Aircraft fields
+        aircraft_list = []
+        for item in response.ac:
+            aircraft = Aircraft(
+                hex=item.hex,
+                flight=item.flight,
+                alt_baro=item.alt_baro,
+                gs=item.gs,
+                lat=item.lat,
+                lon=item.lon,
+                r=item.r,  # registration
+                t=item.t,  # type
+                squawk=item.squawk,
+                # ... map all relevant fields
+            )
+            aircraft_list.append(aircraft)
+
+        return SkyData(
+            result_count=response.total,
+            timestamp=response.now,
+            backend="openapi",
+            simulated=False,
+            aircraft=aircraft_list,
+        )
+```
+
+**Key Pattern**:
+
+1. Adapter creates `OpenAPIClient` instance
+2. Adapter delegates query to `client.v2.method()`
+3. Client returns `V2ResponseModel`
+4. Adapter normalizes to `SkyData` for `BackendProtocol`
+
+**Field Mapping**: `V2ResponseAcItem` uses short field names (`r`, `t`) that must be mapped to `Aircraft` model fields.
+
+## Testing Strategy
 
 ### Unit Tests
 
-Run OpenAPI client tests:
+**Location**: `tests/client/test_openapi.py`
 
-```bash
-pytest tests/models/test_openapi_models.py -v
-pytest tests/client/test_openapi.py -v
+**Approach**: Mock HTTP client to test namespace methods and model parsing:
+
+```python
+@pytest.mark.asyncio
+async def test_v2_get_by_hex():
+    """Test v2.get_by_hex method."""
+    mock_client = Mock()
+    mock_client.get = AsyncMock(return_value=Mock(
+        json=lambda: {
+            "ac": [{"hex": "4CA87C", "flight": "TEST123"}],
+            "ctime": 123.0,
+            "msg": "No error",
+            "now": 123.0,
+            "ptime": 10,
+            "total": 1,
+        },
+        raise_for_status=lambda: None
+    ))
+
+    client = OpenAPIClient()
+    client._v2 = V2Namespace(mock_client)
+
+    response = await client.v2.get_by_hex("4CA87C")
+
+    assert isinstance(response, V2ResponseModel)
+    assert response.total == 1
+    assert response.ac[0].hex == "4CA87C"
+
+@pytest.mark.asyncio
+async def test_model_validation():
+    """Test that invalid data raises validation error."""
+    mock_client = Mock()
+    mock_client.get = AsyncMock(return_value=Mock(
+        json=lambda: {"invalid": "data"},
+        raise_for_status=lambda: None
+    ))
+
+    client = OpenAPIClient()
+    client._v2 = V2Namespace(mock_client)
+
+    with pytest.raises(ValidationError):
+        await client.v2.get_by_hex("4CA87C")
 ```
 
 ### Integration Tests
 
-Run tests against the live API:
+**Location**: `tests/integration/test_live_openapi.py`
 
-```bash
-pytest tests/integration/test_live_openapi.py --run-live-openapi -v
+**Approach**: Test against real OpenAPI:
+
+```python
+@pytest.mark.asyncio
+async def test_openapi_get_by_hex():
+    """Test v2.get_by_hex against live API."""
+    async with OpenAPIClient() as client:
+        response = await client.v2.get_by_hex("4CA87C")
+
+        assert isinstance(response, V2ResponseModel)
+        assert response.total >= 0
+        assert isinstance(response.ac, list)
 ```
 
-**Note**: These tests make real API calls and are automatically run in CI.
+## Related Documentation
 
-## Comparison with RE-API Client
+- **[Backend Protocol](./backend-protocol.md)**: How adapters integrate with SkySnoop
+- **[RE-API Client](./reapi-client.md)**: Alternative low-level client for RE-API
+- **[Architecture](./architecture.md)**: Overall system architecture
+- **[Testing](./testing.md)**: Testing strategies
 
-| Feature | OpenAPI Client | RE-API Client |
-|---------|---------------|---------------|
-| **Base URL** | `https://api.adsb.lol` | Feeder-specific |
-| **Authentication** | API key (future) | None |
-| **Documentation** | Official OpenAPI spec | Informal |
-| **Type Safety** | Full Pydantic models | Basic dataclasses |
-| **Endpoint Coverage** | V2 + V0 endpoints | RE-API endpoints |
-| **CI Testing** | ✅ Yes | ❌ No (requires feeder) |
-| **Recommended** | ✅ For new code | Legacy support |
+## User Documentation
 
-## Troubleshooting
+For usage examples and common patterns, see:
 
-### Import Errors
-
-If you see import errors for OpenAPI models:
-
-```bash
-# Ensure dev dependencies are installed
-pip install -e ".[dev]"
-
-# Regenerate models
-make openapi-update
-```
+- **[Advanced Usage](../advanced.md#low-level-clients)**: Using low-level clients directly
+- **[Getting Started](../getting-started.md)**: Basic usage patterns
 
 ### Validation Errors
 

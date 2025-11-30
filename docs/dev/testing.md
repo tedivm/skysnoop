@@ -13,7 +13,7 @@ This document describes the testing strategy and practices for the skysnoop SDK.
 ## Test Organization
 
 ```mermaid
-graph TD
+flowchart LR
     tests["tests/"]
 
     tests --> client["client/<br/><i>HTTP and API client tests</i>"]
@@ -21,22 +21,34 @@ graph TD
     tests --> query["query/<br/><i>Query building tests</i>"]
     tests --> integration["integration/<br/><i>Live API tests (opt-in)</i>"]
     tests --> fixtures["fixtures/<br/><i>Test data</i>"]
-    tests --> cli["test_cli.py<br/><i>CLI command tests (17 tests)</i>"]
-    tests --> exceptions["test_exceptions.py<br/><i>Exception tests (5 tests)</i>"]
+    tests --> cli["test_cli.py<br/><i>CLI command tests</i>"]
+    tests --> exceptions["test_exceptions.py<br/><i>Exception tests</i>"]
     tests --> conftest["conftest.py<br/><i>Shared fixtures and config</i>"]
 
-    client --> base["test_base.py<br/><i>BaseHTTPClient tests (12 tests)</i>"]
-    client --> api["test_api.py<br/><i>ReAPIClient tests (18 tests)</i>"]
+    client --> base["test_base.py<br/><i>BaseHTTPClient tests</i>"]
+    client --> api["test_api.py<br/><i>ReAPIClient tests</i>"]
+    client --> openapi["test_openapi.py<br/><i>OpenAPIClient tests</i>"]
+    client --> skysnoop["test_skysnoop.py<br/><i>SkySnoop unified client</i>"]
+    client --> backend_sel["test_backend_selection.py<br/><i>Backend selection logic</i>"]
+    client --> reapi_adapter["test_reapi_adapter.py<br/><i>RE-API adapter</i>"]
+    client --> openapi_adapter["test_openapi_adapter.py<br/><i>OpenAPI adapter</i>"]
+    client --> openapi_sim["test_openapi_adapter_simulation.py<br/><i>OpenAPI simulation mode</i>"]
+    client --> protocol["test_protocol_compliance.py<br/><i>Protocol compliance</i>"]
 
-    models --> aircraft["test_aircraft.py<br/><i>Aircraft model (10 tests)</i>"]
-    models --> response["test_response.py<br/><i>APIResponse model (13 tests)</i>"]
+    models --> aircraft["test_aircraft.py<br/><i>Aircraft model</i>"]
+    models --> response["test_response.py<br/><i>APIResponse model</i>"]
+    models --> skydata["test_skydata.py<br/><i>SkyData unified model</i>"]
+    models --> openapi_models["test_openapi_models.py<br/><i>OpenAPI v2 models</i>"]
 
-    query --> qfilters["test_filters.py<br/><i>QueryFilters (22 tests)</i>"]
-    query --> builder["test_builder.py<br/><i>QueryBuilder (19 tests)</i>"]
+    query --> qfilters["test_filters.py<br/><i>QueryFilters</i>"]
+    query --> builder["test_builder.py<br/><i>QueryBuilder</i>"]
 
-    integration --> live["test_live_api.py<br/><i>Live API integration (8 tests)</i>"]
+    integration --> live_api["test_live_api.py<br/><i>Live RE-API integration</i>"]
+    integration --> live_openapi["test_live_openapi.py<br/><i>Live OpenAPI integration</i>"]
+    integration --> live_skysnoop["test_skysnoop_live.py<br/><i>Live SkySnoop integration</i>"]
 
-    fixtures --> apiresponses["api_responses/<br/><i>Real API response JSON files</i>"]
+    fixtures --> apiresponses["api_responses/<br/><i>RE-API response JSON files</i>"]
+    fixtures --> openapiresponses["openapi_responses/<br/><i>OpenAPI response JSON files</i>"]
 ```
 
 ## Test Types
@@ -65,8 +77,9 @@ Test component interactions with mocked external dependencies.
 **Examples**:
 
 - `test_base.py`: HTTP client with mocked httpx responses (respx)
-- `test_api.py`: API client with mocked HTTP client
-- `test_cli.py`: CLI commands with mocked API client
+- `test_api.py`: SkySnoop and ReAPIClient with mocked HTTP client
+- `test_openapi.py`: OpenAPIClient with mocked HTTP client
+- `test_cli.py`: CLI commands with mocked SkySnoop client
 
 **Characteristics**:
 
@@ -79,19 +92,30 @@ Test component interactions with mocked external dependencies.
 
 Test against the actual adsb.lol API.
 
-**Location**: `tests/integration/test_live_api.py`
+**Locations**:
+
+- `tests/integration/test_live_api.py`: RE-API live tests
+- `tests/integration/test_live_openapi.py`: OpenAPI live tests
+- `tests/integration/test_skysnoop_live.py`: SkySnoop unified client live tests
 
 **How to Run**:
 
 ```bash
+# Run RE-API live tests (requires feeder access)
 pytest --run-live-api
+
+# Run OpenAPI live tests (publicly accessible)
+pytest --run-live-openapi
+
+# Run both
+pytest --run-live-api --run-live-openapi
 ```
 
 **Characteristics**:
 
 - Require internet connection
 - Slow (network latency)
-- Marked with `@pytest.mark.live_api`
+- Marked with `@pytest.mark.live_api` or `@pytest.mark.live_openapi`
 - Skipped by default
 - Verify real API behavior
 - Crucial for validating assumptions
@@ -105,13 +129,13 @@ pytest --run-live-api
 
 ### API Response Fixtures
 
-**Location**: `tests/fixtures/api_responses/`
+**Location**: `tests/fixtures/api_responses/` (RE-API) and `tests/fixtures/openapi_responses/` (OpenAPI)
 
-**Files**:
+**RE-API Response Files**:
 
 - `circle_multiple_aircraft.json`: Large response (198 aircraft)
 - `circle_single_aircraft.json`: Single aircraft response
-- `circle_zero_aircraft.json`: Empty response
+- `circle_zero_results.json`: Empty response
 - `closest_response.json`: Closest query result
 - `box_response.json`: Box query result
 - `find_hex_success.json`: Successful hex lookup
@@ -119,6 +143,12 @@ pytest --run-live-api
 - `find_callsign_multiple.json`: Multiple callsign matches
 - `all_with_pos_sample.json`: Bulk query sample
 - `altitude_ground_example.json`: Aircraft on ground
+
+**OpenAPI Response Files**:
+
+- `v2_hex_single.json`: Single hex lookup response
+- `v2_callsign_multiple.json`: Multiple callsign matches
+- Various other v2 endpoint responses
 
 **How to Create New Fixtures**:
 
@@ -134,6 +164,11 @@ curl "https://re-api.adsb.lol?circle=37.7749,-122.4194,200" > tests/fixtures/api
 **Fixtures**:
 
 - `load_api_response(filename)`: Loads JSON fixture as dict
+- `skydata_response`: SkyData with 2 aircraft (unified model)
+- `empty_skydata_response`: SkyData with 0 aircraft
+- `single_skydata_response`: SkyData with 1 aircraft
+- `mock_aircraft`: Factory for creating Aircraft instances
+- `mock_skydata`: Factory for creating SkyData instances
 - Pytest configuration for live API tests
 
 ## Testing Patterns
@@ -193,11 +228,11 @@ from typer.testing import CliRunner
 
 runner = CliRunner()
 
-@patch("skysnoop.cli.ReAPIClient")
-def test_circle_command_table_output(mock_client_class, circle_response):
+@patch("skysnoop.cli.SkySnoop")
+def test_circle_command_table_output(mock_client_class, skydata_response):
     """Test circle command with table output."""
     mock_client = AsyncMock()
-    mock_client.circle.return_value = circle_response
+    mock_client.get_in_circle.return_value = skydata_response
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
     mock_client_class.return_value = mock_client
@@ -206,16 +241,18 @@ def test_circle_command_table_output(mock_client_class, circle_response):
 
     assert result.exit_code == 0
     assert "Found" in result.stdout
-    mock_client.circle.assert_called_once()
+    mock_client.get_in_circle.assert_called_once()
 ```
 
 **Best Practices**:
 
 - Use `CliRunner` from typer.testing
-- Mock ReAPIClient entirely
+- Mock `SkySnoop` client (high-level unified client)
 - Use `AsyncMock` for async methods
+- Use `SkyData` response fixtures (`skydata_response`, `single_skydata_response`, etc.)
 - Verify command output
 - Test both table and JSON output
+- Test backend selection with `--backend` option
 
 ### Testing Error Handling
 
@@ -263,7 +300,10 @@ pytest tests/client/test_api.py::test_circle_query
 ### With Coverage
 
 ```bash
-pytest --cov=adsblol --cov-report=term-missing
+pytest --cov=skysnoop --cov-report=term-missing
+
+# Or use the makefile
+make pytest
 ```
 
 ### With Verbose Output
@@ -275,17 +315,30 @@ pytest -v
 ### Live API Tests
 
 ```bash
+# RE-API tests (requires feeder access)
 pytest --run-live-api
+
+# OpenAPI tests (publicly accessible)
+pytest --run-live-openapi
+
+# Both
+pytest --run-live-api --run-live-openapi
+
+# Or use the makefile for RE-API tests
+make pytest_live
 ```
 
 ### Markers
 
 ```bash
-# Run only live API tests
+# Run only RE-API live tests
 pytest -m live_api --run-live-api
 
+# Run only OpenAPI live tests
+pytest -m live_openapi --run-live-openapi
+
 # Run everything except live API tests
-pytest -m "not live_api"
+pytest -m "not live_api and not live_openapi"
 ```
 
 ## Coverage Requirements
@@ -299,7 +352,7 @@ pytest -m "not live_api"
 **Check Coverage**:
 
 ```bash
-pytest --cov=adsblol --cov-report=html
+pytest --cov=skysnoop --cov-report=html
 open htmlcov/index.html
 ```
 
@@ -359,7 +412,7 @@ test:
       with:
         python-version: '3.10'
     - run: pip install -e ".[dev]"
-    - run: pytest --cov=adsblol --cov-report=xml
+    - run: pytest --cov=skysnoop --cov-report=xml
     - uses: codecov/codecov-action@v2  # Optional: upload coverage
 ```
 
@@ -479,14 +532,14 @@ async def test_large_response_performance():
     """Test handling of large responses."""
     start = time.time()
 
-    async with ReAPIClient() as client:
-        response = await client.all_with_pos()
+    async with SkySnoop() as client:
+        response = await client.get_all()
 
     elapsed = time.time() - start
 
     # Reasonable performance expectations
     assert elapsed < 5.0
-    assert response.resultCount > 0
+    assert response.result_count > 0
 ```
 
 ## Test Maintenance

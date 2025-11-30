@@ -13,43 +13,37 @@ A Python SDK and CLI for querying aircraft data from [adsb.lol](https://adsb.lol
 - 🖥️ **Beautiful CLI**: Rich terminal output with tables and JSON formatting
 - 🔍 **Flexible Filtering**: Filter by altitude, type, callsign, squawk, and more
 - 🧪 **Well-Tested**: >90% code coverage with comprehensive test suite
-- 🔌 **Dual API Support**: Both OpenAPI (public) and RE-API (feeder) clients
+- 🔌 **Dual Backend Support**: Works with both OpenAPI (public) and RE-API (feeder) backends
 
-## API Access
+## Documentation
 
-This library provides **two API clients**:
+**Complete documentation is available at [docs/README.md](./docs/README.md)**
 
-### OpenAPI Client (Public API)
+- **[Getting Started](./docs/getting-started.md)** - Installation and basic usage
+- **[SkySnoop Client Guide](./docs/skysnoop-client.md)** - Complete API reference
+- **[Query Filters](./docs/filters.md)** - Filtering aircraft by altitude, type, etc.
+- **[Advanced Usage](./docs/advanced.md)** - Backend selection, low-level clients, optimization
+- **[CLI Usage](./docs/cli-usage.md)** - Command-line interface guide
 
-The **OpenAPI client** uses the public `https://api.adsb.lol` endpoint:
+**For Contributors:**
 
-- ✅ **Publicly accessible** - no feeder requirement
-- ✅ **Official OpenAPI spec** - auto-generated models
-- ✅ **Type-safe** - full Pydantic v2 validation
-- 🔑 API keys will be required in the future (currently unavailable)
+- **[Developer Documentation](./docs/dev/README.md)** - Architecture, testing, and contributing
 
-See [OpenAPI Client Documentation](docs/dev/openapi-client.md) for details.
+## About adsb.lol
 
-### RE-API Client (Feeder API)
+[adsb.lol](https://adsb.lol) is a community-driven ADS-B aggregation service that collects aircraft position data from volunteers worldwide.
 
-The **RE-API client** uses the `https://re-api.adsb.lol/` endpoint:
+**API Backends:**
 
-- 🎯 **Feeder-only** - requires feeding data to adsb.lol network
-- 📡 **Legacy API** - original implementation
-- 🔓 No API key required, but must run from the Feeder IP address
+- **RE-API** - Feeder-only API with full features
+- **OpenAPI** - Public API (some features simulated)
 
-**Getting Feeder Access:**
+The **SkySnoop unified client** automatically handles both backends, selecting the appropriate one and normalizing responses.
 
-1. Set up an ADS-B receiver to feed data to adsb.lol
-2. Visit the [adsb.lol documentation](https://adsb.lol/) for setup instructions
-3. Join the adsb.lol community
+**Resources:**
 
-**API Documentation:**
-
-- OpenAPI Documentation: [https://api.adsb.lol/docs](https://api.adsb.lol/docs)
-- OpenAPI Spec: [https://api.adsb.lol/api/openapi.json](https://api.adsb.lol/api/openapi.json)
-- Main Site: [https://adsb.lol](https://adsb.lol)
-- Community Support: Available through the adsb.lol platform
+- **Main Site**: [https://adsb.lol](https://adsb.lol)
+- **OpenAPI Docs**: [https://api.adsb.lol/docs](https://api.adsb.lol/docs)
 
 ## Installation
 
@@ -69,30 +63,128 @@ pip install -e .
 
 ## Quick Start
 
-### OpenAPI Client (Recommended)
+### High-Level Client (Recommended)
 
-The OpenAPI client provides access to the public API with type-safe, validated responses.
+The **SkySnoop unified client** provides a single, consistent interface that works with both API backends. It automatically selects the appropriate backend, normalizes responses, and handles differences transparently.
 
-#### CLI Usage
+**Key Benefits:**
 
-```bash
-# Query military aircraft
-skysnoop openapi v2 mil
+- ✅ **Single interface** - no need to learn two different APIs
+- ✅ **Automatic backend selection** - uses RE-API by default, OpenAPI as fallback
+- ✅ **Normalized responses** - consistent data structure regardless of backend
+- ✅ **Future-proof** - ready for API key authentication when available
+- ✅ **Flexible** - can explicitly choose backend when needed
 
-# Find aircraft by ICAO hex
-skysnoop openapi v2 hex 4CA87C
+#### Python Usage
 
-# Find aircraft near a point (within 50nm)
-skysnoop openapi v2 point 37.7749 -- -122.4194 50
+```python
+import asyncio
+from skysnoop import SkySnoop
 
-# Get closest aircraft
-skysnoop openapi v2 closest 37.7749 -- -122.4194 100
+async def main():
+    # Auto-select backend (recommended - prefers RE-API, falls back to OpenAPI)
+    async with SkySnoop() as client:
+        # Query by ICAO hex
+        result = await client.get_by_hex("4CA87C")
+        print(f"Found {result.result_count} aircraft")
 
-# Output as JSON
-skysnoop openapi v2 mil --json
+        # Query aircraft in a circle (50nm radius)
+        result = await client.get_in_circle(
+            lat=37.7749,
+            lon=-122.4194,
+            radius=50
+        )
+
+        # Get closest aircraft within 100nm
+        result = await client.get_closest(
+            lat=37.7749,
+            lon=-122.4194,
+            radius=100
+        )
+
+        # Access aircraft data
+        for aircraft in result.aircraft:
+            print(f"{aircraft.hex}: {aircraft.flight} at {aircraft.alt_baro}ft")
+
+asyncio.run(main())
 ```
 
-#### Python Library Usage
+With filters:
+
+```python
+from skysnoop import SkySnoop
+from skysnoop.query.filters import QueryFilters
+
+async def main():
+    async with SkySnoop() as client:
+        # Create filters
+        filters = QueryFilters(
+            above_alt_baro=30000,
+            type_code="A321",
+            military=True
+        )
+
+        # Query with filters
+        result = await client.get_in_circle(
+            lat=37.7749,
+            lon=-122.4194,
+            radius=200,
+            filters=filters
+        )
+
+        print(f"Found {result.result_count} military A321s above 30,000ft")
+
+asyncio.run(main())
+```
+
+Explicit backend selection:
+
+```python
+async def main():
+    # Force RE-API backend (feeder access required)
+    async with SkySnoop(backend="reapi") as client:
+        result = await client.get_in_box(
+            lat_min=37.0,
+            lat_max=38.0,
+            lon_min=-123.0,
+            lon_max=-122.0
+        )
+
+    # Force OpenAPI backend (public access)
+    async with SkySnoop(backend="openapi") as client:
+        result = await client.get_by_hex("4CA87C")
+
+asyncio.run(main())
+```
+
+### Backend Comparison
+
+| Feature | RE-API | OpenAPI | SkySnoop (auto) |
+|---------|--------|---------|-----------------|
+| **Access** | Feeder-only | Public | Auto-selects |
+| **`get_by_hex()`** | ✅ | ✅ | ✅ |
+| **`get_by_callsign()`** | ✅ | ✅ | ✅ |
+| **`get_by_registration()`** | ✅ | ✅ | ✅ |
+| **`get_by_type()`** | ✅ | ✅ | ✅ |
+| **`get_in_circle()`** | ✅ Native | ✅ Simulated* | ✅ |
+| **`get_closest()`** | ✅ Native | ✅ Simulated* | ✅ |
+| **`get_in_box()`** | ✅ Native | ✅ Simulated* | ✅ |
+| **`get_all_with_pos()`** | ✅ | ❌ | ⚠️ Backend-dependent |
+| **Filters** | ✅ Full support | ⚠️ Limited** | ⚠️ Backend-dependent |
+| **API Key** | Not required | Future | Optional |
+
+\* OpenAPI simulates geographic queries by fetching all aircraft and filtering client-side
+\** OpenAPI supports only `military` filter via separate endpoint
+
+---
+
+### Low-Level Clients (Advanced Use)
+
+For advanced use cases requiring direct backend access, you can use the low-level client implementations:
+
+#### OpenAPI Client
+
+Direct access to the public OpenAPI backend with versioned endpoints and type-safe generated models.
 
 ```python
 import asyncio
@@ -113,7 +205,7 @@ async def main():
             radius=50
         )
 
-        # Access aircraft data
+        # Access aircraft data (note: uses .ac instead of .aircraft)
         for aircraft in response.ac:
             print(f"{aircraft.hex}: {aircraft.flight} at {aircraft.alt_baro}ft")
 
@@ -122,44 +214,15 @@ asyncio.run(main())
 
 See [OpenAPI Client Documentation](docs/dev/openapi-client.md) for full details.
 
-### RE-API Client (Feeder-Only)
+#### RE-API Client
 
-The RE-API client requires feeder access but provides additional functionality.
-
-#### CLI Usage
-
-Query aircraft within 50 nautical miles of San Francisco:
-
-```bash
-skysnoop circle -- 37.7749 -122.4194 50
-```
-
-Find all Airbus A321 aircraft:
-
-```bash
-skysnoop find-type A321
-```
-
-Get JSON output for programmatic use:
-
-```bash
-skysnoop circle --json -- 37.7749 -122.4194 50
-```
-
-Filter by altitude:
-
-```bash
-skysnoop circle --above-alt 30000 -- 37.7749 -122.4194 200
-```
-
-#### Python Library Usage
+Direct access to the feeder-only RE-API backend with native support for all geographic queries.
 
 ```python
 import asyncio
 from skysnoop.client.api import ReAPIClient
 
 async def main():
-    # Create client
     async with ReAPIClient() as client:
         # Query aircraft in a circular area
         response = await client.circle(
@@ -168,7 +231,7 @@ async def main():
             radius=50  # nautical miles
         )
 
-        # Iterate through results
+        # Iterate through results (note: uses .resultCount instead of .result_count)
         print(f"Found {response.resultCount} aircraft")
         for aircraft in response:
             print(f"{aircraft.hex}: {aircraft.flight} at {aircraft.alt_baro}ft")
@@ -203,67 +266,86 @@ async def main():
 asyncio.run(main())
 ```
 
-## CLI Commands
+**Note**: The low-level clients have different APIs and response formats. Consider using the SkySnoop unified client for a consistent interface.
+
+## CLI Usage
+
+The `skysnoop` CLI provides a convenient command-line interface for querying aircraft data.
+
+### Backend Selection
+
+All commands support the `--backend` option to choose which API backend to use:
+
+```bash
+# Auto-select backend (default - prefers RE-API, falls back to OpenAPI)
+skysnoop circle --backend auto -- 37.7749 -122.4194 50
+
+# Force RE-API backend (feeder access required)
+skysnoop circle --backend reapi -- 37.7749 -122.4194 50
+
+# Force OpenAPI backend (public access)
+skysnoop find-hex --backend openapi 4CA87C
+```
+
+**Note:** The default backend is `auto`, which automatically selects RE-API (feeder) or OpenAPI (public) based on availability.
 
 ### Geographic Queries
 
-- **`circle`** - Query aircraft within a radius of a point
+Query aircraft by location:
 
-  ```bash
-  skysnoop circle -- <lat> <lon> <radius_nm>
-  ```
+```bash
+# Query aircraft within a radius of a point
+skysnoop circle -- <lat> <lon> <radius_nm>
+skysnoop circle -- 37.7749 -122.4194 50
 
-- **`closest`** - Find the closest aircraft to a point
+# Find the closest aircraft to a point
+skysnoop closest -- <lat> <lon> <max_radius_nm>
+skysnoop closest -- 37.7749 -122.4194 100
 
-  ```bash
-  skysnoop closest -- <lat> <lon> <max_radius_nm>
-  ```
-
-- **`box`** - Query aircraft within a bounding box
-
-  ```bash
-  skysnoop box -- <lat_south> <lat_north> <lon_west> <lon_east>
-  ```
+# Query aircraft within a bounding box
+skysnoop box -- <lat_south> <lat_north> <lon_west> <lon_east>
+skysnoop box -- 37.0 38.0 -123.0 -122.0
+```
 
 ### Identifier Queries
 
-- **`find-hex`** - Find aircraft by ICAO hex code
+Query aircraft by identifier:
 
-  ```bash
-  skysnoop find-hex <hex_code>
-  ```
+```bash
+# Find aircraft by ICAO hex code
+skysnoop find-hex <hex_code>
+skysnoop find-hex 4CA87C
 
-- **`find-callsign`** - Find aircraft by callsign
+# Find aircraft by callsign
+skysnoop find-callsign <callsign>
+skysnoop find-callsign UAL123
 
-  ```bash
-  skysnoop find-callsign <callsign>
-  ```
+# Find aircraft by registration
+skysnoop find-reg <registration>
+skysnoop find-reg N12345
 
-- **`find-reg`** - Find aircraft by registration
-
-  ```bash
-  skysnoop find-reg <registration>
-  ```
-
-- **`find-type`** - Find all aircraft of a specific type
-
-  ```bash
-  skysnoop find-type <type_code>
-  ```
+# Find all aircraft of a specific type
+skysnoop find-type <type_code>
+skysnoop find-type A321
+```
 
 ### Bulk Queries
 
-- **`all-aircraft`** - Query all aircraft (with position by default)
+Query all aircraft:
 
-  ```bash
-  skysnoop all-aircraft
-  skysnoop all-aircraft --include-no-position  # Include aircraft without position
-  ```
+```bash
+# Query all aircraft with position data
+skysnoop all-aircraft
 
-### Common Options
+# Include aircraft without position data
+skysnoop all-aircraft --include-no-position
+```
 
-All geographic and bulk commands support these filters:
+### Filtering Options
 
+All commands support filtering options:
+
+- `--backend <auto|reapi|openapi>` - Choose API backend
 - `--json` - Output as JSON instead of table
 - `--callsign <callsign>` - Filter by exact callsign
 - `--callsign-prefix <prefix>` - Filter by callsign prefix
@@ -273,128 +355,54 @@ All geographic and bulk commands support these filters:
 - `--below-alt <feet>` - Filter for aircraft below altitude
 - `--military` - Filter for military aircraft
 
+**Examples:**
+
+```bash
+# Military aircraft above 30,000ft with auto backend selection
+skysnoop circle --backend auto --military --above-alt 30000 -- 37.7749 -122.4194 200
+
+# A321 aircraft with JSON output
+skysnoop find-type --json A321
+
+# Aircraft with callsign prefix using OpenAPI backend
+skysnoop circle --backend openapi --callsign-prefix UAL -- 37.7749 -122.4194 100
+```
+
+### Low-Level CLI Commands
+
+For direct access to backend-specific features:
+
+```bash
+# OpenAPI v2 endpoints
+skysnoop openapi v2 mil              # Query military aircraft
+skysnoop openapi v2 hex 4CA87C       # Find by hex
+skysnoop openapi v2 point 37.7749 -- -122.4194 50  # Query by location
+skysnoop openapi v2 closest 37.7749 -- -122.4194 100  # Closest aircraft
+```
+
 **Note**: When using negative coordinates (e.g., longitude), use `--` before the coordinates to prevent them from being interpreted as options.
-
-## API Reference
-
-### ReAPIClient
-
-Main client class for querying the adsb.lol API.
-
-```python
-from skysnoop.client.api import ReAPIClient
-
-async with ReAPIClient(
-    base_url="https://re-api.adsb.lol/",  # Default API URL
-    timeout=30.0  # Request timeout in seconds
-) as client:
-    # Use client methods
-    pass
-```
-
-#### Methods
-
-##### Geographic Queries
-
-- **`circle(lat, lon, radius, filters=None)`** - Query aircraft in circular area
-  - Returns: `APIResponse`
-  - Parameters:
-    - `lat` (float): Latitude in decimal degrees
-    - `lon` (float): Longitude in decimal degrees
-    - `radius` (float): Radius in nautical miles
-    - `filters` (QueryFilters, optional): Filter criteria
-
-- **`closest(lat, lon, radius, filters=None)`** - Find closest aircraft
-  - Returns: `APIResponse` (max 1 aircraft)
-
-- **`box(lat_south, lat_north, lon_west, lon_east, filters=None)`** - Query bounding box
-  - Returns: `APIResponse`
-
-##### Identifier Queries
-
-- **`find_hex(hex_code)`** - Find by ICAO 24-bit address
-- **`find_callsign(callsign)`** - Find by callsign
-- **`find_reg(registration)`** - Find by registration
-- **`find_type(type_code)`** - Find by aircraft type
-
-##### Bulk Queries
-
-- **`all_with_pos(filters=None)`** - All aircraft with position data
-- **`all(filters=None)`** - All aircraft including those without position
-
-### QueryFilters
-
-Filter criteria for queries.
-
-```python
-from skysnoop.query.filters import QueryFilters
-
-filters = QueryFilters(
-    callsign_exact="UAL123",        # Exact callsign match
-    callsign_prefix="UAL",          # Callsign prefix (mutually exclusive with exact)
-    type_code="A321",                # Aircraft type code
-    squawk="7700",                   # Squawk code
-    above_alt_baro=30000,            # Minimum altitude in feet
-    below_alt_baro=40000,            # Maximum altitude in feet
-    mil=True,                        # Military aircraft only
-    pia=False,                       # Privacy/PIA flag
-    ladd=False                       # LADD flag
-)
-```
-
-### Aircraft Model
-
-The `Aircraft` Pydantic model represents individual aircraft data.
-
-**Key Fields:**
-
-- `hex` (str, required): ICAO 24-bit address
-- `flight` (str | None): Callsign/flight number
-- `registration` (str | None): Aircraft registration
-- `type` (str | None): Aircraft type code
-- `lat` (float | None): Latitude
-- `lon` (float | None): Longitude
-- `alt_baro` (int | Literal["ground"] | None): Barometric altitude or "ground"
-- `alt_geom` (int | Literal["ground"] | None): Geometric altitude or "ground"
-- `gs` (float | None): Ground speed in knots
-- `track` (float | None): Track angle in degrees
-- `squawk` (str | None): Squawk code
-
-**Properties:**
-
-- `has_position` (bool): True if lat/lon are set
-- `position_age` (float | None): Seconds since position updated
-- `callsign` (str | None): Cleaned callsign (stripped whitespace)
-
-### APIResponse Model
-
-Response wrapper containing aircraft data.
-
-```python
-response = await client.circle(...)
-
-print(response.resultCount)  # Number of aircraft
-print(response.now)          # Query timestamp
-print(response.ptime)        # Processing time
-
-# Iterate aircraft
-for aircraft in response:
-    print(aircraft.hex)
-
-# Direct access
-aircraft_list = response.aircraft
-```
 
 ## Error Handling
 
 The library defines custom exceptions in `skysnoop.exceptions`:
 
 ```python
-from skysnoop.exceptions import SkySnoopError, APIError, TimeoutError, ValidationError
+from skysnoop import SkySnoop
+from skysnoop.exceptions import (
+    SkySnoopError,
+    APIError,
+    TimeoutError,
+    ValidationError,
+    UnsupportedOperationError
+)
 
 try:
-    async with ReAPIClient() as client:
-        response = await client.circle(lat=37.7749, lon=-122.4194, radius=50)
+    async with SkySnoop() as client:
+        result = await client.get_in_circle(lat=37.7749, lon=-122.4194, radius=50)
+        for aircraft in result.aircraft:
+            print(f"{aircraft.hex}: {aircraft.callsign}")
+except UnsupportedOperationError as e:
+    print(f"Operation not supported by backend: {e}")
 except TimeoutError as e:
     print(f"Request timed out: {e}")
 except APIError as e:
@@ -411,6 +419,23 @@ except SkySnoopError as e:
   - `APIError` - HTTP/API errors (4xx, 5xx responses)
   - `ValidationError` - Invalid parameters or data
   - `TimeoutError` - Request timeout
+  - `UnsupportedOperationError` - Operation not supported by the selected backend
+
+You can catch all library errors with the base exception:
+
+```python
+from skysnoop import SkySnoop
+from skysnoop.exceptions import SkySnoopError
+
+try:
+    async with SkySnoop() as client:
+        result = await client.get_in_circle(lat=37.7749, lon=-122.4194, radius=50)
+        for aircraft in result.aircraft:
+            print(f"{aircraft.hex}: {aircraft.callsign}")
+except SkySnoopError as e:
+    # Catches all library-specific errors
+    print(f"SkySnoop error: {e}")
+```
 
 ## Configuration
 
@@ -458,7 +483,7 @@ make pytest_loud
 make pytest_live
 ```
 
-**Note:** Live API tests require valid API credentials. You must be feeding data to adsb.lol to have API access. See the [API Access](#api-access) section above.
+**Note:** Live API tests require API access. For the OpenAPI access this is currently open to all with no API key, but may be restricted in the future. For the RE-API you must be feeding data to adsb.lol to have API access. See the [About adsb.lol](#about-adsblol) section above.
 
 ### Code Quality
 
@@ -482,24 +507,25 @@ make ruff_fixes
 make chores
 ```
 
-## About adsb.lol
+## Data Format Notes
 
-[adsb.lol](https://adsb.lol) is a community-driven ADS-B aggregation service that collects aircraft position data from volunteers worldwide. API access is **free for feeders** who contribute data to the network.
+**Important conventions:**
 
-**Resources:**
+- **Altitude**: Can be an integer (in feet) or the string `"ground"` for aircraft on the ground
+- **Distances**: All distances are in nautical miles
+- **Altitudes**: All altitudes are in feet
+- **Speeds**: All speeds are in knots
+- **Coordinates**: Latitude/longitude in decimal degrees
 
-- **Main Site**: [https://adsb.lol](https://adsb.lol)
-- **API Documentation**: [https://api.adsb.lol/docs](https://api.adsb.lol/docs)
-- **Feeding Guide**: Check the adsb.lol site for instructions on setting up a feeder
+## Documentation
 
-**Important Notes:**
+For complete documentation, see:
 
-- Altitude can be an integer or the string "ground" for aircraft on the ground
-- All distances are in nautical miles
-- All altitudes are in feet
-- All speeds are in knots
-- API access requires feeding data to the adsb.lol network
+- **[User Documentation](./docs/README.md)** - Getting started, API reference, CLI usage
+- **[Developer Documentation](./docs/dev/README.md)** - Architecture, contributing, testing
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Data from [adsb.lol](adsb.lol) is available under the [ODbl license](https://www.adsb.lol/docs/open-data/api/).
