@@ -132,3 +132,36 @@ class RateLimitError(SkySnoopError):
         """
         super().__init__(message)
         self.retry_after = retry_after
+
+
+class UnsupportedOperationError(SkySnoopError):
+    """Raised when an operation is not supported by the selected backend.
+
+    This exception indicates that the requested operation is not available
+    in the currently selected backend. The error message should guide users
+    to use an alternative backend that supports the operation.
+
+    Examples:
+        - Calling get_all_with_pos() with OpenAPI backend (250 NM limit prevents simulation)
+        - Calling get_by_squawk() with RE-API backend (OpenAPI only feature)
+        - Attempting backend-specific operations without the required backend
+    """
+
+    pass
+
+
+class BackendConnectionError(SkySnoopError):
+    """Raised when unable to connect to or initialize a backend.
+
+    This exception indicates that the backend could not be initialized or
+    connected to, typically due to network issues, invalid configuration,
+    or service unavailability.
+
+    Examples:
+        - RE-API not accessible from current IP address
+        - Invalid API endpoint URL
+        - Network connectivity issues
+        - Service temporarily unavailable
+    """
+
+    pass

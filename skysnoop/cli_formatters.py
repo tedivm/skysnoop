@@ -1,25 +1,26 @@
 """Output formatting utilities for CLI commands."""
 
 import json
-from typing import Any, Literal
+from typing import Any, Literal, Union
 
 from rich.console import Console
 from rich.table import Table
 
 from skysnoop.models.openapi import V2ResponseModel
 from skysnoop.models.response import APIResponse
+from skysnoop.models.skydata import SkyData
 
 console = Console()
 
 
 def format_output(
-    response: APIResponse,
+    response: Union[APIResponse, SkyData],
     format_type: Literal["table", "json"] = "table",
 ) -> None:
     """Format and display API response in the specified format.
 
     Args:
-        response: The API response to format
+        response: The API response or SkyData to format
         format_type: Output format - "table" for human-readable or "json" for machine-readable
     """
     if format_type == "json":
@@ -28,27 +29,30 @@ def format_output(
         format_table(response)
 
 
-def format_json(response: APIResponse) -> None:
+def format_json(response: Union[APIResponse, SkyData]) -> None:
     """Format response as JSON and print to stdout.
 
     Args:
-        response: The API response to format
+        response: The API response or SkyData to format
     """
     output = response.model_dump(mode="json", exclude_none=True)
     print(json.dumps(output, indent=2))
 
 
-def format_table(response: APIResponse) -> None:
+def format_table(response: Union[APIResponse, SkyData]) -> None:
     """Format response as a human-readable table.
 
     Args:
-        response: The API response to format
+        response: The API response or SkyData to format
     """
-    if response.resultCount == 0:
+    # Handle both APIResponse (resultCount) and SkyData (result_count)
+    count = getattr(response, "result_count", None) or getattr(response, "resultCount", 0)
+
+    if count == 0:
         console.print("[yellow]No aircraft found matching the query.[/yellow]")
         return
 
-    console.print(f"[bold green]Found {response.resultCount} aircraft[/bold green]\n")
+    console.print(f"[bold green]Found {count} aircraft[/bold green]\n")
 
     table = Table(show_header=True, header_style="bold cyan")
     table.add_column("Hex", style="dim")

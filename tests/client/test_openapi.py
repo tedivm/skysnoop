@@ -365,3 +365,74 @@ async def test_v0_get_airport():
     assert route.called
     assert isinstance(response, dict)
     assert response["icao"] == "KSFO"
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_v0_get_routes():
+    """Test v0.get_routes() POST method."""
+    mock_data = {"routes": [{"from": "KSFO", "to": "KLAX"}]}
+
+    route = respx.post("https://api.adsb.lol/v0/routes").mock(return_value=Response(200, json=mock_data))
+
+    async with OpenAPIClient() as client:
+        response = await client.v0.get_routes(planes=["ae5a06", "a12345"])
+
+    assert route.called
+    assert isinstance(response, dict)
+    # Verify the request body was correct
+    request_body = json.loads(route.calls.last.request.content)
+    assert request_body == {"planes": ["ae5a06", "a12345"]}
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_validation_error_422_invalid_json():
+    """Test handling of 422 validation error with invalid JSON response."""
+    # This tests the fallback path when validation error JSON parsing fails
+    route = respx.get("https://api.adsb.lol/v2/point/999/0/50").mock(
+        return_value=Response(422, text="Not valid JSON for validation error")
+    )
+
+    with pytest.raises(OpenAPIValidationError) as exc_info:
+        async with OpenAPIClient() as client:
+            await client.v2.get_by_point(lat=999, lon=0, radius=50)
+
+    assert route.called
+    assert exc_info.value.status_code == 422
+    # Should have empty details list when JSON parsing fails
+    assert exc_info.value.details == []
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_rate_limit_error_429_invalid_retry_after():
+    """Test 429 error with invalid Retry-After header that can't be parsed as int."""
+    route = respx.get("https://api.adsb.lol/v2/mil").mock(
+        return_value=Response(
+            429,
+            headers={"Retry-After": "invalid-number"},
+            text="Too many requests",
+        )
+    )
+
+    with pytest.raises(RateLimitError) as exc_info:
+        async with OpenAPIClient() as client:
+            await client.v2.get_mil()
+
+    assert route.called
+    # When Retry-After header can't be parsed, should be None
+    assert exc_info.value.retry_after is None
+
+
+@pytest.mark.asyncio
+async def test_unsupported_http_method():
+    """Test that unsupported HTTP methods raise APIError (wrapping ValueError)."""
+    client = OpenAPIClient()
+
+    # The ValueError gets caught and re-wrapped as APIError
+    with pytest.raises(APIError, match="Invalid JSON response"):
+        # This should never happen in normal use, but tests the error path
+        async with client:
+            # Access internal method with unsupported method
+            await client._request(method="PUT", path="/v2/test")

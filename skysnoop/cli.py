@@ -5,8 +5,8 @@ from typing import Literal, Optional
 import typer
 
 from .cli_formatters import format_openapi_output, format_output
-from .client.api import ReAPIClient
 from .client.openapi import OpenAPIClient
+from .client.skysnoop import SkySnoop
 from .exceptions import (
     APIError,
     AuthenticationError,
@@ -14,6 +14,7 @@ from .exceptions import (
     RateLimitError,
     SkySnoopError,
     TimeoutError,
+    UnsupportedOperationError,
     ValidationError,
 )
 from .query.filters import QueryFilters
@@ -28,6 +29,27 @@ v0_app = typer.Typer(help="OpenAPI v0 utility endpoints")
 app.add_typer(openapi_app, name="openapi")
 openapi_app.add_typer(v2_app, name="v2")
 openapi_app.add_typer(v0_app, name="v0")
+
+
+# Backend type definition for CLI
+BackendChoice = Literal["auto", "reapi", "openapi"]
+
+
+def get_client_for_backend(backend: BackendChoice = "auto"):
+    """Get the appropriate client based on backend choice.
+
+    Args:
+        backend: Backend to use ("auto", "reapi", "openapi"), defaults to "auto"
+
+    Returns:
+        Context manager for SkySnoop unified client
+    """
+    # Use unified SkySnoop client
+    return SkySnoop(
+        backend=backend,
+        base_url=settings.adsb_api_base_url,
+        timeout=settings.adsb_api_timeout,
+    )
 
 
 def syncify(f):
@@ -49,6 +71,10 @@ def handle_errors(f):
     def wrapper(*args, **kwargs):
         try:
             return f(*args, **kwargs)
+        except UnsupportedOperationError as e:
+            typer.echo(f"Error: Unsupported operation - {e}", err=True)
+            typer.echo("Try using a different backend with --backend option (auto, reapi, or openapi).", err=True)
+            raise typer.Exit(code=1)
         except TimeoutError as e:
             typer.echo(f"Error: Request timed out - {e}", err=True)
             typer.echo("The API took too long to respond. Please try again.", err=True)
@@ -93,6 +119,7 @@ async def circle(
     military: Optional[bool] = typer.Option(None, "--military", help="Filter for military aircraft"),
     interesting: Optional[bool] = typer.Option(None, "--interesting", help="Filter for interesting aircraft"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    backend: BackendChoice = typer.Option("auto", "--backend", help="Backend to use (auto, reapi, openapi)"),
 ):
     """Query aircraft within a circular area."""
     filters = _build_filters(
@@ -106,11 +133,13 @@ async def circle(
         interesting=interesting,
     )
 
-    async with ReAPIClient(
-        base_url=settings.adsb_api_base_url,
-        timeout=settings.adsb_api_timeout,
-    ) as client:
-        response = await client.circle(lat=lat, lon=lon, radius=radius, filters=filters)
+    async with get_client_for_backend(backend) as client:
+        # Use appropriate method based on client type (duck typing for testability)
+        if hasattr(client, "get_in_circle"):
+            response = await client.get_in_circle(lat=lat, lon=lon, radius=radius, filters=filters)
+        else:
+            # Legacy ReAPIClient
+            response = await client.circle(lat=lat, lon=lon, radius=radius, filters=filters)
 
     output_format = "json" if json_output else settings.cli_output_format
     format_output(response, format_type=output_format)
@@ -132,6 +161,7 @@ async def closest(
     military: Optional[bool] = typer.Option(None, "--military", help="Filter for military aircraft"),
     interesting: Optional[bool] = typer.Option(None, "--interesting", help="Filter for interesting aircraft"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    backend: BackendChoice = typer.Option("auto", "--backend", help="Backend to use (auto, reapi, openapi)"),
 ):
     """Query the closest aircraft to a point within a maximum radius."""
     filters = _build_filters(
@@ -145,11 +175,11 @@ async def closest(
         interesting=interesting,
     )
 
-    async with ReAPIClient(
-        base_url=settings.adsb_api_base_url,
-        timeout=settings.adsb_api_timeout,
-    ) as client:
-        response = await client.closest(lat=lat, lon=lon, radius=radius, filters=filters)
+    async with get_client_for_backend(backend) as client:
+        if hasattr(client, "get_closest"):
+            response = await client.get_closest(lat=lat, lon=lon, radius=radius, filters=filters)
+        else:
+            response = await client.closest(lat=lat, lon=lon, radius=radius, filters=filters)
 
     output_format = "json" if json_output else settings.cli_output_format
     format_output(response, format_type=output_format)
@@ -172,6 +202,7 @@ async def box(
     military: Optional[bool] = typer.Option(None, "--military", help="Filter for military aircraft"),
     interesting: Optional[bool] = typer.Option(None, "--interesting", help="Filter for interesting aircraft"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    backend: BackendChoice = typer.Option("auto", "--backend", help="Backend to use (auto, reapi, openapi)"),
 ):
     """Query aircraft within a rectangular bounding box."""
     filters = _build_filters(
@@ -185,17 +216,23 @@ async def box(
         interesting=interesting,
     )
 
-    async with ReAPIClient(
-        base_url=settings.adsb_api_base_url,
-        timeout=settings.adsb_api_timeout,
-    ) as client:
-        response = await client.box(
-            lat_south=lat_south,
-            lat_north=lat_north,
-            lon_west=lon_west,
-            lon_east=lon_east,
-            filters=filters,
-        )
+    async with get_client_for_backend(backend) as client:
+        if hasattr(client, "get_in_box"):
+            response = await client.get_in_box(
+                lat_min=lat_south,
+                lat_max=lat_north,
+                lon_min=lon_west,
+                lon_max=lon_east,
+                filters=filters,
+            )
+        else:
+            response = await client.box(
+                lat_south=lat_south,
+                lat_north=lat_north,
+                lon_west=lon_west,
+                lon_east=lon_east,
+                filters=filters,
+            )
 
     output_format = "json" if json_output else settings.cli_output_format
     format_output(response, format_type=output_format)
@@ -207,13 +244,14 @@ async def box(
 async def find_hex(
     hex_code: str = typer.Argument(..., help="ICAO 24-bit hex code (e.g., a12345)"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    backend: BackendChoice = typer.Option("auto", "--backend", help="Backend to use (auto, reapi, openapi)"),
 ):
     """Find a specific aircraft by its ICAO hex code."""
-    async with ReAPIClient(
-        base_url=settings.adsb_api_base_url,
-        timeout=settings.adsb_api_timeout,
-    ) as client:
-        response = await client.find_hex(hex_code)
+    async with get_client_for_backend(backend) as client:
+        if hasattr(client, "get_by_hex"):
+            response = await client.get_by_hex(hex_code)
+        else:
+            response = await client.find_hex(hex_code)
 
     output_format = "json" if json_output else settings.cli_output_format
     format_output(response, format_type=output_format)
@@ -225,13 +263,14 @@ async def find_hex(
 async def find_callsign(
     callsign: str = typer.Argument(..., help="Aircraft callsign (e.g., UAL123)"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    backend: BackendChoice = typer.Option("auto", "--backend", help="Backend to use (auto, reapi, openapi)"),
 ):
     """Find aircraft by their callsign."""
-    async with ReAPIClient(
-        base_url=settings.adsb_api_base_url,
-        timeout=settings.adsb_api_timeout,
-    ) as client:
-        response = await client.find_callsign(callsign)
+    async with get_client_for_backend(backend) as client:
+        if hasattr(client, "get_by_callsign"):
+            response = await client.get_by_callsign(callsign)
+        else:
+            response = await client.find_callsign(callsign)
 
     output_format = "json" if json_output else settings.cli_output_format
     format_output(response, format_type=output_format)
@@ -243,13 +282,14 @@ async def find_callsign(
 async def find_reg(
     registration: str = typer.Argument(..., help="Aircraft registration (e.g., N12345)"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    backend: BackendChoice = typer.Option("auto", "--backend", help="Backend to use (auto, reapi, openapi)"),
 ):
     """Find a specific aircraft by its registration."""
-    async with ReAPIClient(
-        base_url=settings.adsb_api_base_url,
-        timeout=settings.adsb_api_timeout,
-    ) as client:
-        response = await client.find_reg(registration)
+    async with get_client_for_backend(backend) as client:
+        if hasattr(client, "get_by_registration"):
+            response = await client.get_by_registration(registration)
+        else:
+            response = await client.find_reg(registration)
 
     output_format = "json" if json_output else settings.cli_output_format
     format_output(response, format_type=output_format)
@@ -261,13 +301,14 @@ async def find_reg(
 async def find_type(
     type_code: str = typer.Argument(..., help="Aircraft type code (e.g., A321, B738)"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    backend: BackendChoice = typer.Option("auto", "--backend", help="Backend to use (auto, reapi, openapi)"),
 ):
     """Find all aircraft of a specific type."""
-    async with ReAPIClient(
-        base_url=settings.adsb_api_base_url,
-        timeout=settings.adsb_api_timeout,
-    ) as client:
-        response = await client.find_type(type_code)
+    async with get_client_for_backend(backend) as client:
+        if hasattr(client, "get_by_type"):
+            response = await client.get_by_type(type_code)
+        else:
+            response = await client.find_type(type_code)
 
     output_format = "json" if json_output else settings.cli_output_format
     format_output(response, format_type=output_format)
@@ -291,6 +332,7 @@ async def all_aircraft(
     military: Optional[bool] = typer.Option(None, "--military", help="Filter for military aircraft"),
     interesting: Optional[bool] = typer.Option(None, "--interesting", help="Filter for interesting aircraft"),
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+    backend: BackendChoice = typer.Option("auto", "--backend", help="Backend to use (auto, reapi, openapi)"),
 ):
     """Query all aircraft currently tracked by the API.
 
@@ -308,14 +350,20 @@ async def all_aircraft(
         interesting=interesting,
     )
 
-    async with ReAPIClient(
-        base_url=settings.adsb_api_base_url,
-        timeout=settings.adsb_api_timeout,
-    ) as client:
-        if include_no_position:
-            response = await client.all(filters=filters)
+    async with get_client_for_backend(backend) as client:
+        if hasattr(client, "get_in_circle"):  # SkySnoop-specific method
+            # SkySnoop only supports all_with_pos via get_all_with_pos()
+            if include_no_position:
+                typer.echo(
+                    "Warning: --include-no-position not supported with SkySnoop client. Use legacy client or only aircraft with position will be returned.",
+                    err=True,
+                )
+            response = await client.get_all_with_pos(filters=filters)
         else:
-            response = await client.all_with_pos(filters=filters)
+            if include_no_position:
+                response = await client.all(filters=filters)
+            else:
+                response = await client.all_with_pos(filters=filters)
 
     output_format = "json" if json_output else settings.cli_output_format
     format_output(response, format_type=output_format)

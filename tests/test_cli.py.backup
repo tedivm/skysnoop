@@ -83,13 +83,14 @@ def test_circle_command_json_output(mock_client_class, skydata_response):
     assert "result_count" in output
 
 
-@patch("skysnoop.cli.SkySnoop")
-def test_circle_command_with_filters(mock_client_class, skydata_response):
+@patch("skysnoop.cli.ReAPIClient")
+def test_circle_command_with_filters(mock_client_class, circle_response):
     """Test circle command with altitude filter."""
     mock_client = AsyncMock()
-    mock_client.get_in_circle.return_value = skydata_response
+    mock_client.circle.return_value = circle_response
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
+    del mock_client.get_in_circle  # Simulate ReAPIClient (no SkySnoop methods)
     mock_client_class.return_value = mock_client
 
     result = runner.invoke(
@@ -99,19 +100,20 @@ def test_circle_command_with_filters(mock_client_class, skydata_response):
 
     assert result.exit_code == 0
     # Verify filters were passed
-    call_args = mock_client.get_in_circle.call_args
+    call_args = mock_client.circle.call_args
     assert call_args.kwargs["filters"] is not None
     assert call_args.kwargs["filters"].type_code == "A321"
     assert call_args.kwargs["filters"].above_alt_baro == 20000
 
 
-@patch("skysnoop.cli.SkySnoop")
-def test_circle_command_empty_results(mock_client_class, empty_skydata_response):
+@patch("skysnoop.cli.ReAPIClient")
+def test_circle_command_empty_results(mock_client_class, empty_response):
     """Test circle command with no results."""
     mock_client = AsyncMock()
-    mock_client.get_in_circle.return_value = empty_response
+    mock_client.circle.return_value = empty_response
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
+    del mock_client.get_in_circle  # Simulate ReAPIClient (no SkySnoop methods)
     mock_client_class.return_value = mock_client
 
     result = runner.invoke(app, ["circle", "--", "37.7749", "-122.4194", "200"])
@@ -120,164 +122,173 @@ def test_circle_command_empty_results(mock_client_class, empty_skydata_response)
     assert "No aircraft found" in result.stdout
 
 
-@patch("skysnoop.cli.SkySnoop")
-def test_closest_command(mock_client_class, single_skydata_response):
+@patch("skysnoop.cli.ReAPIClient")
+def test_closest_command(mock_client_class, single_aircraft_response):
     """Test closest command."""
     mock_client = AsyncMock()
-    mock_client.get_closest.return_value = single_skydata_response
+    mock_client.closest.return_value = single_aircraft_response
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
+    del mock_client.get_closest  # Simulate ReAPIClient (no SkySnoop methods)
     mock_client_class.return_value = mock_client
 
     result = runner.invoke(app, ["closest", "--", "37.7749", "-122.4194", "500"])
 
     assert result.exit_code == 0
     assert "Found" in result.stdout
-    mock_client.get_closest.assert_called_once()
+    mock_client.closest.assert_called_once()
 
 
-@patch("skysnoop.cli.SkySnoop")
-def test_box_command(mock_client_class, skydata_response):
+@patch("skysnoop.cli.ReAPIClient")
+def test_box_command(mock_client_class, circle_response):
     """Test box command."""
     mock_client = AsyncMock()
-    mock_client.get_in_box.return_value = skydata_response
+    mock_client.box.return_value = circle_response
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
+    del mock_client.get_in_box  # Simulate ReAPIClient (no SkySnoop methods)
     mock_client_class.return_value = mock_client
 
     result = runner.invoke(app, ["box", "--", "37.0", "38.5", "-123.0", "-121.0"])
 
     assert result.exit_code == 0
     assert "Found" in result.stdout
-    mock_client.get_in_box.assert_called_once()
+    mock_client.box.assert_called_once()
 
 
-@patch("skysnoop.cli.SkySnoop")
-def test_find_hex_command(mock_client_class, single_skydata_response):
+@patch("skysnoop.cli.ReAPIClient")
+def test_find_hex_command(mock_client_class, single_aircraft_response):
     """Test find-hex command."""
     mock_client = AsyncMock()
-    mock_client.get_by_hex.return_value = single_skydata_response
+    mock_client.find_hex.return_value = single_aircraft_response
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
+    del mock_client.get_by_hex  # Simulate ReAPIClient (no SkySnoop methods)
     mock_client_class.return_value = mock_client
 
     result = runner.invoke(app, ["find-hex", "a12345"])
 
     assert result.exit_code == 0
     assert "Found" in result.stdout
-    mock_client.get_by_hex.assert_called_once_with("a12345")
+    mock_client.find_hex.assert_called_once_with("a12345")
 
 
-@patch("skysnoop.cli.SkySnoop")
-def test_find_callsign_command(mock_client_class, skydata_response):
+@patch("skysnoop.cli.ReAPIClient")
+def test_find_callsign_command(mock_client_class, circle_response):
     """Test find-callsign command."""
     mock_client = AsyncMock()
-    mock_client.get_by_callsign.return_value = skydata_response
+    mock_client.find_callsign.return_value = circle_response
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
+    del mock_client.get_by_callsign  # Simulate ReAPIClient (no SkySnoop methods)
     mock_client_class.return_value = mock_client
 
     result = runner.invoke(app, ["find-callsign", "UAL123"])
 
     assert result.exit_code == 0
     assert "Found" in result.stdout
-    mock_client.get_by_callsign.assert_called_once_with("UAL123")
+    mock_client.find_callsign.assert_called_once_with("UAL123")
 
 
-@patch("skysnoop.cli.SkySnoop")
-def test_find_reg_command(mock_client_class, single_skydata_response):
+@patch("skysnoop.cli.ReAPIClient")
+def test_find_reg_command(mock_client_class, single_aircraft_response):
     """Test find-reg command."""
     mock_client = AsyncMock()
-    mock_client.get_by_registration.return_value = single_skydata_response
+    mock_client.find_reg.return_value = single_aircraft_response
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
+    del mock_client.get_by_registration  # Simulate ReAPIClient (no SkySnoop methods)
     mock_client_class.return_value = mock_client
 
     result = runner.invoke(app, ["find-reg", "N12345"])
 
     assert result.exit_code == 0
     assert "Found" in result.stdout
-    mock_client.get_by_registration.assert_called_once_with("N12345")
+    mock_client.find_reg.assert_called_once_with("N12345")
 
 
-@patch("skysnoop.cli.SkySnoop")
-def test_find_type_command(mock_client_class, skydata_response):
+@patch("skysnoop.cli.ReAPIClient")
+def test_find_type_command(mock_client_class, circle_response):
     """Test find-type command."""
     mock_client = AsyncMock()
-    mock_client.get_by_type.return_value = skydata_response
+    mock_client.find_type.return_value = circle_response
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
+    del mock_client.get_by_type  # Simulate ReAPIClient (no SkySnoop methods)
     mock_client_class.return_value = mock_client
 
     result = runner.invoke(app, ["find-type", "A321"])
 
     assert result.exit_code == 0
     assert "Found" in result.stdout
-    mock_client.get_by_type.assert_called_once_with("A321")
+    mock_client.find_type.assert_called_once_with("A321")
 
 
-@patch("skysnoop.cli.SkySnoop")
-def test_all_aircraft_command_with_position(mock_client_class, skydata_response):
+@patch("skysnoop.cli.ReAPIClient")
+def test_all_aircraft_command_with_position(mock_client_class, circle_response):
     """Test all-aircraft command (default: with position only)."""
     mock_client = AsyncMock()
-    mock_client.get_all_with_pos.return_value = skydata_response
+    mock_client.all_with_pos.return_value = circle_response
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
+    del mock_client.get_in_circle  # Simulate ReAPIClient (no SkySnoop methods)
     mock_client_class.return_value = mock_client
 
     result = runner.invoke(app, ["all-aircraft"])
 
     assert result.exit_code == 0
     assert "Found" in result.stdout
-    mock_client.get_all_with_pos.assert_called_once()
+    mock_client.all_with_pos.assert_called_once()
     mock_client.all.assert_not_called()
 
 
-@patch("skysnoop.cli.SkySnoop")
-def test_all_aircraft_command_include_no_position(mock_client_class, skydata_response):
-    """Test all-aircraft command with --include-no-position flag (shows warning with SkySnoop)."""
+@patch("skysnoop.cli.ReAPIClient")
+def test_all_aircraft_command_include_no_position(mock_client_class, circle_response):
+    """Test all-aircraft command with --include-no-position flag."""
     mock_client = AsyncMock()
-    mock_client.get_all_with_pos.return_value = skydata_response
+    mock_client.all.return_value = circle_response
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
+    del mock_client.get_in_circle  # Simulate ReAPIClient (no SkySnoop methods)
     mock_client_class.return_value = mock_client
 
     result = runner.invoke(app, ["all-aircraft", "--include-no-position"])
 
     assert result.exit_code == 0
     assert "Found" in result.stdout
-    # SkySnoop shows warning and falls back to get_all_with_pos
-    assert "Warning" in result.stderr or "include-no-position not supported" in result.stderr
-    mock_client.get_all_with_pos.assert_called_once()
+    mock_client.all.assert_called_once()
+    mock_client.all_with_pos.assert_not_called()
 
 
-@patch("skysnoop.cli.SkySnoop")
-def test_all_aircraft_command_with_filters(mock_client_class, skydata_response):
+@patch("skysnoop.cli.ReAPIClient")
+def test_all_aircraft_command_with_filters(mock_client_class, circle_response):
     """Test all-aircraft command with filters."""
     mock_client = AsyncMock()
-    mock_client.get_all_with_pos.return_value = skydata_response
+    mock_client.all_with_pos.return_value = circle_response
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
+    del mock_client.get_in_circle  # Simulate ReAPIClient (no SkySnoop methods)
     mock_client_class.return_value = mock_client
 
     result = runner.invoke(app, ["all-aircraft", "--type", "B738", "--callsign-prefix", "UAL"])
 
     assert result.exit_code == 0
-    call_args = mock_client.get_all_with_pos.call_args
+    call_args = mock_client.all_with_pos.call_args
     assert call_args.kwargs["filters"] is not None
     assert call_args.kwargs["filters"].type_code == "B738"
     assert call_args.kwargs["filters"].callsign_prefix == "UAL"
 
 
-@patch("skysnoop.cli.SkySnoop")
+@patch("skysnoop.cli.ReAPIClient")
 def test_error_handling_api_error(mock_client_class):
     """Test error handling for API errors."""
     from skysnoop.exceptions import APIError
 
     mock_client = AsyncMock()
-    mock_client.get_in_circle.side_effect = APIError("API request failed")
+    mock_client.circle.side_effect = APIError("API request failed")
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
+    del mock_client.get_in_circle  # Simulate ReAPIClient (no SkySnoop methods)
     mock_client_class.return_value = mock_client
 
     result = runner.invoke(app, ["circle", "--", "37.7749", "-122.4194", "200"])
@@ -287,15 +298,16 @@ def test_error_handling_api_error(mock_client_class):
     assert isinstance(result.exception, SystemExit)
 
 
-@patch("skysnoop.cli.SkySnoop")
+@patch("skysnoop.cli.ReAPIClient")
 def test_error_handling_timeout(mock_client_class):
     """Test error handling for timeout errors."""
     from skysnoop.exceptions import TimeoutError
 
     mock_client = AsyncMock()
-    mock_client.get_in_circle.side_effect = TimeoutError("Request timed out")
+    mock_client.circle.side_effect = TimeoutError("Request timed out")
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
+    del mock_client.get_in_circle  # Simulate ReAPIClient (no SkySnoop methods)
     mock_client_class.return_value = mock_client
 
     result = runner.invoke(app, ["circle", "--", "37.7749", "-122.4194", "200"])
@@ -304,15 +316,16 @@ def test_error_handling_timeout(mock_client_class):
     assert isinstance(result.exception, SystemExit)
 
 
-@patch("skysnoop.cli.SkySnoop")
+@patch("skysnoop.cli.ReAPIClient")
 def test_error_handling_validation_error(mock_client_class):
     """Test error handling for validation errors."""
     from skysnoop.exceptions import ValidationError
 
     mock_client = AsyncMock()
-    mock_client.get_in_circle.side_effect = ValidationError("Invalid parameters")
+    mock_client.circle.side_effect = ValidationError("Invalid parameters")
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
+    del mock_client.get_in_circle  # Simulate ReAPIClient (no SkySnoop methods)
     mock_client_class.return_value = mock_client
 
     result = runner.invoke(app, ["circle", "--", "37.7749", "-122.4194", "200"])
@@ -325,10 +338,21 @@ def test_error_handling_validation_error(mock_client_class):
 
 
 @patch("skysnoop.cli.SkySnoop")
-def test_circle_command_with_backend_auto(mock_skysnoop_class, skydata_response):
+def test_circle_command_with_backend_auto(mock_skysnoop_class, circle_response):
     """Test circle command with --backend auto."""
+    from skysnoop.models.skydata import SkyData
+
+    # Convert APIResponse to SkyData for unified client
+    skydata = SkyData(
+        timestamp=circle_response.now,
+        result_count=circle_response.resultCount,
+        processing_time=circle_response.ptime,
+        aircraft=circle_response.aircraft,
+        backend="reapi",
+    )
+
     mock_client = AsyncMock()
-    mock_client.get_in_circle.return_value = skydata_response
+    mock_client.get_in_circle.return_value = skydata
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
     mock_skysnoop_class.return_value = mock_client
@@ -341,10 +365,19 @@ def test_circle_command_with_backend_auto(mock_skysnoop_class, skydata_response)
 
 
 @patch("skysnoop.cli.SkySnoop")
-def test_find_hex_command_with_backend_openapi(mock_skysnoop_class, single_skydata_response):
+def test_find_hex_command_with_backend_openapi(mock_skysnoop_class, single_aircraft_response):
     """Test find_hex command with --backend openapi."""
+    from skysnoop.models.skydata import SkyData
+
+    skydata = SkyData(
+        timestamp=single_aircraft_response.now,
+        result_count=single_aircraft_response.resultCount,
+        aircraft=single_aircraft_response.aircraft,
+        backend="openapi",
+    )
+
     mock_client = AsyncMock()
-    mock_client.get_by_hex.return_value = single_skydata_response
+    mock_client.get_by_hex.return_value = skydata
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
     mock_skysnoop_class.return_value = mock_client
@@ -357,10 +390,20 @@ def test_find_hex_command_with_backend_openapi(mock_skysnoop_class, single_skyda
 
 
 @patch("skysnoop.cli.SkySnoop")
-def test_backend_reapi_explicit(mock_skysnoop_class, skydata_response):
+def test_backend_reapi_explicit(mock_skysnoop_class, circle_response):
     """Test explicit reapi backend selection."""
+    from skysnoop.models.skydata import SkyData
+
+    skydata = SkyData(
+        timestamp=circle_response.now,
+        result_count=circle_response.resultCount,
+        processing_time=circle_response.ptime,
+        aircraft=circle_response.aircraft,
+        backend="reapi",
+    )
+
     mock_client = AsyncMock()
-    mock_client.get_in_circle.return_value = skydata_response
+    mock_client.get_in_circle.return_value = skydata
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
     mock_skysnoop_class.return_value = mock_client
@@ -373,24 +416,23 @@ def test_backend_reapi_explicit(mock_skysnoop_class, skydata_response):
     assert call_kwargs["backend"] == "reapi"
 
 
-@patch("skysnoop.cli.SkySnoop")
-def test_default_auto_backend(mock_client_class, skydata_response):
-    """Test that commands default to 'auto' backend when --backend flag is omitted."""
+@patch("skysnoop.cli.ReAPIClient")
+def test_backward_compatibility_without_backend(mock_client_class, circle_response):
+    """Test that commands work without --backend flag (backward compatibility)."""
     mock_client = AsyncMock()
-    mock_client.get_in_circle.return_value = skydata_response
+    mock_client.circle.return_value = circle_response
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
+    # Explicitly delete get_in_circle to simulate ReAPIClient which doesn't have it
+    del mock_client.get_in_circle
     mock_client_class.return_value = mock_client
 
     result = runner.invoke(app, ["circle", "--", "37.7749", "-122.4194", "50"])
 
     assert result.exit_code == 0
-    # Should use SkySnoop with 'auto' backend by default
+    # Should use legacy ReAPIClient when no backend specified
     mock_client_class.assert_called_once()
-    # Verify backend='auto' was passed
-    call_kwargs = mock_client_class.call_args[1]
-    assert call_kwargs["backend"] == "auto"
-    mock_client.get_in_circle.assert_called_once()
+    mock_client.circle.assert_called_once()
 
 
 @patch("skysnoop.cli.SkySnoop")
