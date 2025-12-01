@@ -159,6 +159,11 @@ asyncio.run(main())
 
 ### Backend Comparison
 
+**Access Requirements:**
+
+- **RE-API**: Only accessible from the same IP address as active adsb.lol feeders. This is a stable, mature API that requires you to be contributing data to the network. If you have access to this you should use it.
+- **OpenAPI**: Publicly accessible without restrictions currently. However, this is a newer API that is subject to change and will likely introduce rate limiting and API key requirements in the future.
+
 | Feature | RE-API | OpenAPI |
 |---------|--------|---------|
 | **Access** | Feeder-only | Public |
@@ -167,14 +172,14 @@ asyncio.run(main())
 | **`get_by_callsign()`** | ✅ | ✅ |
 | **`get_by_registration()`** | ✅ | ✅ |
 | **`get_by_type()`** | ✅ | ✅ |
-| **`get_in_circle()`** | ✅ Native | ✅ Simulated* |
-| **`get_closest()`** | ✅ Native | ✅ Simulated* |
-| **`get_in_box()`** | ✅ Native | ✅ Simulated* |
+| **`get_in_circle()`** | ✅ | ✅ |
+| **`get_closest()`** | ✅ | ✅ |
+| **`get_in_box()`** | ✅ | ✅ Simulated* |
 | **`get_all_with_pos()`** | ✅ | ❌ |
 | **Filters** | ✅ Full support | ⚠️ Limited** |
 | **API Key** | Not required | Future |
 
-\* OpenAPI simulates geographic queries by fetching all aircraft and filtering client-side
+\* OpenAPI simulates `get_in_box()` by fetching bounding circle and filtering client-side
 \** OpenAPI supports only `military` filter via separate endpoint
 
 ---
