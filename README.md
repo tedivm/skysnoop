@@ -17,17 +17,17 @@ A Python SDK and CLI for querying aircraft data from [adsb.lol](https://adsb.lol
 
 ## Documentation
 
-**Complete documentation is available at [docs/README.md](./docs/README.md)**
+**Complete documentation is available at [docs/README.md](https://github.com/tedivm/skysnoop/blob/main/docs/README.md)**
 
-- **[Getting Started](./docs/getting-started.md)** - Installation and basic usage
-- **[SkySnoop Client Guide](./docs/skysnoop-client.md)** - Complete API reference
-- **[Query Filters](./docs/filters.md)** - Filtering aircraft by altitude, type, etc.
-- **[Advanced Usage](./docs/advanced.md)** - Backend selection, low-level clients, optimization
-- **[CLI Usage](./docs/cli-usage.md)** - Command-line interface guide
+- **[Getting Started](https://github.com/tedivm/skysnoop/blob/main/docs/getting-started.md)** - Installation and basic usage
+- **[SkySnoop Client Guide](https://github.com/tedivm/skysnoop/blob/main/docs/skysnoop-client.md)** - Complete API reference
+- **[Query Filters](https://github.com/tedivm/skysnoop/blob/main/docs/filters.md)** - Filtering aircraft by altitude, type, etc.
+- **[Advanced Usage](https://github.com/tedivm/skysnoop/blob/main/docs/advanced.md)** - Backend selection, low-level clients, optimization
+- **[CLI Usage](https://github.com/tedivm/skysnoop/blob/main/docs/cli-usage.md)** - Command-line interface guide
 
 **For Contributors:**
 
-- **[Developer Documentation](./docs/dev/README.md)** - Architecture, testing, and contributing
+- **[Developer Documentation](https://github.com/tedivm/skysnoop/blob/main/docs/dev/README.md)** - Architecture, testing, and contributing
 
 ## About adsb.lol
 
@@ -159,19 +159,20 @@ asyncio.run(main())
 
 ### Backend Comparison
 
-| Feature | RE-API | OpenAPI | SkySnoop (auto) |
-|---------|--------|---------|-----------------|
-| **Access** | Feeder-only | Public | Auto-selects |
-| **`get_by_hex()`** | ✅ | ✅ | ✅ |
-| **`get_by_callsign()`** | ✅ | ✅ | ✅ |
-| **`get_by_registration()`** | ✅ | ✅ | ✅ |
-| **`get_by_type()`** | ✅ | ✅ | ✅ |
-| **`get_in_circle()`** | ✅ Native | ✅ Simulated* | ✅ |
-| **`get_closest()`** | ✅ Native | ✅ Simulated* | ✅ |
-| **`get_in_box()`** | ✅ Native | ✅ Simulated* | ✅ |
-| **`get_all_with_pos()`** | ✅ | ❌ | ⚠️ Backend-dependent |
-| **Filters** | ✅ Full support | ⚠️ Limited** | ⚠️ Backend-dependent |
-| **API Key** | Not required | Future | Optional |
+| Feature | RE-API | OpenAPI |
+|---------|--------|---------|
+| **Access** | Feeder-only | Public |
+| **Status** | Stable | Subject to Change |
+| **`get_by_hex()`** | ✅ | ✅ |
+| **`get_by_callsign()`** | ✅ | ✅ |
+| **`get_by_registration()`** | ✅ | ✅ |
+| **`get_by_type()`** | ✅ | ✅ |
+| **`get_in_circle()`** | ✅ Native | ✅ Simulated* |
+| **`get_closest()`** | ✅ Native | ✅ Simulated* |
+| **`get_in_box()`** | ✅ Native | ✅ Simulated* |
+| **`get_all_with_pos()`** | ✅ | ❌ |
+| **Filters** | ✅ Full support | ⚠️ Limited** |
+| **API Key** | Not required | Future |
 
 \* OpenAPI simulates geographic queries by fetching all aircraft and filtering client-side
 \** OpenAPI supports only `military` filter via separate endpoint
@@ -212,7 +213,7 @@ async def main():
 asyncio.run(main())
 ```
 
-See [OpenAPI Client Documentation](docs/dev/openapi-client.md) for full details.
+See [OpenAPI Client Documentation](https://github.com/tedivm/skysnoop/blob/main/docs/dev/openapi-client.md) for full details.
 
 #### RE-API Client
 
@@ -521,8 +522,8 @@ make chores
 
 For complete documentation, see:
 
-- **[User Documentation](./docs/README.md)** - Getting started, API reference, CLI usage
-- **[Developer Documentation](./docs/dev/README.md)** - Architecture, contributing, testing
+- **[User Documentation](https://github.com/tedivm/skysnoop/blob/main/docs/README.md)** - Getting started, API reference, CLI usage
+- **[Developer Documentation](https://github.com/tedivm/skysnoop/blob/main/docs/dev/README.md)** - Architecture, contributing, testing
 
 ## License
 
